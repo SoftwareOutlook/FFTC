@@ -10,6 +10,7 @@
 #include <mkl_service.h>
 #include <mkl_dfti.h>
 #include "fftpack.h"
+#include <casacore/scimath/Mathematics/FFTPack.h>
 
 class fft{
 public:
@@ -44,10 +45,10 @@ public:
     return s;
   }
   virtual size_t size_complex() const = 0;
-  virtual int compute(const complex* in, complex* out) const {}
-  virtual int compute_inverse(const complex* in, complex* out) const {}
-  virtual int compute(const double* in, complex* out) const {}
-  virtual int compute_inverse(const complex* in, double* out) const {}
+  virtual int compute(const ::complex* in, ::complex* out) const {}
+  virtual int compute_inverse(const ::complex* in, ::complex* out) const {}
+  virtual int compute(const double* in, ::complex* out) const {}
+  virtual int compute_inverse(const ::complex* in, double* out) const {}
 };
 
 
@@ -77,7 +78,7 @@ public:
   size_t size_complex() const {
     return size();
   }
-  int compute(const complex* in, complex* out) const {
+  int compute(const ::complex* in, ::complex* out) const {
     size_t i;
     for(i=0; i<size(); ++i){
       fftw_in[i][0]=in[i].real();
@@ -90,7 +91,7 @@ public:
     }
     return 0;
   }
-  int compute_inverse(const complex* in, complex* out) const {
+  int compute_inverse(const ::complex* in, ::complex* out) const {
     fftw_plan inverse_plan=fftw_plan_dft(n_dimensions, n, fftw_in, fftw_out, FFTW_BACKWARD, FFTW_ESTIMATE);
     fft::size_t i;
     for(i=0; i<size(); ++i){
@@ -131,7 +132,7 @@ public:
     s=s*(n[n_dimensions-1]/2+1);
     return s;
   }
-  int compute(const double* in, complex* out) const {
+  int compute(const double* in, ::complex* out) const {
     size_t i;
     for(i=0; i<size(); ++i){
       fftw_in[i]=in[i];
@@ -143,7 +144,7 @@ public:
     }
     return 0;
   }
-  int compute_inverse(const complex* in, double* out) const {
+  int compute_inverse(const ::complex* in, double* out) const {
     fftw_plan inverse_plan=fftw_plan_dft_c2r(n_dimensions, n, fftw_out, fftw_in, FFTW_ESTIMATE);
     size_t i;
     for(i=0; i<size_complex(); ++i){
@@ -188,7 +189,7 @@ public:
   size_t size_complex() const {
     return size();
   }
-  int compute(const complex* in, complex* out) const {
+  int compute(const ::complex* in, ::complex* out) const {
     for(size_t i=0; i<n[0]; ++i){
       data[2*i]=in[i].real();
       data[2*i+1]=in[i].imag();
@@ -200,7 +201,7 @@ public:
     }
     return 0;
   }
-  int compute_inverse(const complex* in, complex* out) const {
+  int compute_inverse(const ::complex* in, ::complex* out) const {
     for(size_t i=0; i<n[0]; ++i){
       data[2*i]=in[i].real();
       data[2*i+1]=in[i].imag();
@@ -233,7 +234,7 @@ public:
   size_t size_complex() const {
     return ceil(((double)size())/2);
   }
-  int compute(const double* in, complex* out) const {
+  int compute(const double* in, ::complex* out) const {
     for(size_t i=0; i<n[0]; ++i){
       data[i]=in[i];
     }
@@ -250,7 +251,7 @@ public:
     }
     return 0;
   }
-  int compute_inverse(const complex* in, double* out) const {
+  int compute_inverse(const ::complex* in, double* out) const {
     data[0]=in[0].x;
     for(size_t i=1; i<size_complex(); ++i){
       data[2*i-1]=in[i].real();
@@ -309,7 +310,7 @@ public:
   size_t size_complex() const {
     return size();
   }
-  int compute(const complex* in, complex* out) const {
+  int compute(const ::complex* in, ::complex* out) const {
     size_t i, j;
     for(i=0; i<size(); ++i){
       data[i].real=in[i].real();
@@ -322,7 +323,7 @@ public:
     }
     return 0;
   }
-  int compute_inverse(const complex* in, complex* out) const {
+  int compute_inverse(const ::complex* in, ::complex* out) const {
     size_t i;
     for(i=0; i<size(); ++i){
       data[i].real=in[i].real();
@@ -383,8 +384,6 @@ public:
       default:
         std::cout << "The strides are computed only in 1, 2 or 3 dimensions.\n";
          break; 
-            
-            
     }
     DftiSetValue(descriptor_handle, DFTI_INPUT_STRIDES, rstrides);
     DftiSetValue(descriptor_handle, DFTI_OUTPUT_STRIDES, cstrides);
@@ -408,7 +407,7 @@ public:
     s=s*(n[n_dimensions-1]/2+1);
     return s;
   }
-  int compute(const double* in, complex* out) const {
+  int compute(const double* in, ::complex* out) const {
     size_t i;
     for(i=0; i<size(); ++i){
       data[i]=in[i];
@@ -420,7 +419,7 @@ public:
     }
     return 0;
   }
-  int compute_inverse(const complex* in, double* out) const {
+  int compute_inverse(const ::complex* in, double* out) const {
     size_t i;
     for(i=0; i<size_complex(); ++i){
       transform[i].real=in[i].real();
@@ -449,79 +448,80 @@ public:
 
 class fftpack : public fft {
 protected:
-    mutable double* data;
-    mutable double* transform;
-    double* wave;
-    int ifac;
+    typedef casa::DComplex casa_complex;
+    typedef casa::Double casa_double;
+    mutable casa_double* w;
+    mutable casa::FFTPack* F;
+     
 public:
   fftpack(const size_t i_n) : fft(1, &i_n){
-    wave=new double[4*size()+15];
-    cffti1(size(), wave, &ifac);
+    w=new casa_double[4*size()+15];
+    F=new casa::FFTPack();
   }
   ~fftpack(){
-    delete[] wave;   
+    delete[] w;
+    delete F;
   }
 };
 
 
 class fftpack_c2c : public fftpack{
 private:
+  mutable casa_complex* data; 
 public:
   fftpack_c2c(const size_t i_n) : fftpack(i_n){
-    data=new double[2*size()];
-    transform=new double[2*size()];
+    data=new casa_complex[size()];
+    F->cffti(size(), w);
   }
   ~fftpack_c2c(){
     delete[] data;
-    delete[] transform;
   }
   size_t size_complex() const {
     return size();
   }
-  int compute(const complex* in, complex* out) const {
+  int compute(const ::complex* in, ::complex* out) const {
     for(size_t i=0; i<n[0]; ++i){
-      data[2*i]=in[i].real();
-      data[2*i+1]=in[i].imag();
+      data[i]=casa_complex(in[i].real(), in[i].imag());
     }
-    cfftf1(size(), data, transform, wave, &ifac, 1);
+    F->cfftf(size(), data, w);
     for(size_t i=0; i<n[0]; ++i){
-      out[i].x=transform[2*i];
-      out[i].y=transform[2*i+1];
+      out[i].x=data[i].real();
+      out[i].y=data[i].imag();
     }
     return 0;
   }
-  int compute_inverse(const complex* in, complex* out) const {
+  int compute_inverse(const ::complex* in, ::complex* out) const {
     for(size_t i=0; i<n[0]; ++i){
-      data[2*i]=in[i].real();
-      data[2*i+1]=in[i].imag();
+      data[i]=casa_complex(in[i].real(), in[i].imag());
     }
-    
+    F->cfftb(size(), data, w);
     for(size_t i=0; i<n[0]; ++i){
-      out[i].x=data[2*i]/size();
-      out[i].y=data[2*i+1]/size();
+      out[i].x=data[i].real()/size();
+      out[i].y=data[i].imag()/size();
     }
-    return 0;
+    return 0; 
   }
 };
 
 class fftpack_r2c : public fftpack{
 private:
-  mutable double* data;
+  mutable casa_double* data;
 public:
   fftpack_r2c(const size_t i_n) : fftpack(i_n){
-    data=new double[2*size()];
+    data=new casa_double[size()];
+    F->rffti(size(), w);
   }
   ~fftpack_r2c(){
-      
+    delete[] data;
   }
   size_t size_complex() const {
     return ceil(((double)size())/2);
   }
-  int compute(const double* in, complex* out) const {
+  int compute(const double* in, ::complex* out) const {
     for(size_t i=0; i<n[0]; ++i){
       data[i]=in[i];
     }
-
+    F->rfftf(size(), data, w);
     out[0].x=data[0];
     out[0].y=0;
     for(size_t i=1; i<size_complex(); ++i){
@@ -534,7 +534,7 @@ public:
     }
     return 0;
   }
-  int compute_inverse(const complex* in, double* out) const {
+  int compute_inverse(const ::complex* in, double* out) const {
     data[0]=in[0].x;
     for(size_t i=1; i<size_complex(); ++i){
       data[2*i-1]=in[i].real();
@@ -544,9 +544,9 @@ public:
       data[size_complex()-1]=in[size_complex()].x;
       data[size_complex()]=-in[size_complex()].y;
     }
-
+    F->rfftb(size(), data, w);
     for(size_t i=0; i<n[0]; ++i){
-      out[i]=data[i];
+      out[i]=data[i]/size();
     }
 
     return 0;
@@ -554,8 +554,8 @@ public:
 };
 
 
-double error(const fft& f, const complex* in, const complex* out){
-  complex* inverse_transform=new complex[f.size()];
+double error(const fft& f, const ::complex* in, const ::complex* out){
+  ::complex* inverse_transform=new ::complex[f.size()];
   f.compute_inverse(out, inverse_transform);
   double e=0;
   for(fft::size_t i=0; i<f.size(); ++i){
@@ -565,7 +565,7 @@ double error(const fft& f, const complex* in, const complex* out){
   return e;
 }
 
-double error(const fft& f, const double* in, const complex* out){
+double error(const fft& f, const double* in, const ::complex* out){
   double* inverse_transform=new double[f.size()];
   f.compute_inverse(out, inverse_transform);
   double e=0;

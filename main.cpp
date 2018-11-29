@@ -30,14 +30,15 @@ int main(int argc, char** argv){
   
   int i, j, k[3], n_x[3], dim[3], n_dimensions;
   double a=0.25;
+  double b=a/2;
   double s, x[3], l_x[3]={1, 1, 1};
   for(i=0; i<3; ++i){
     dim[i]=atoi(*(argv+i+1));
   }
   unsigned long long n_max_elements=dim[0]*dim[1]*dim[2]+1;
   double* signal_r=new double[n_max_elements];
-  complex* signal_c=new complex[n_max_elements];
-  complex* transform=new complex[n_max_elements];
+  ::complex* signal_c=new ::complex[n_max_elements];
+  ::complex* transform=new ::complex[n_max_elements];
   stopwatch sw;
 
 
@@ -53,9 +54,9 @@ int main(int argc, char** argv){
   std::cout << "\n";
   for(k[0]=0; k[0]<n_x[0]; ++k[0]){
     x[0]=((double)k[0])/n_x[0];
-    s=signal(1, l_x, a, x);
+    s=signal(1, l_x, a, b, x);
     signal_r[k[0]]=s;
-    signal_c[k[0]]=complex(s, s);
+    signal_c[k[0]]=::complex(s, s);
   }
 
 
@@ -80,9 +81,6 @@ int main(int argc, char** argv){
   sw.stop();
   std::cout << "      Time:  " << sw.get() << " s\n";
   std::cout << "      Error: " << error(fw_1d_c2c, signal_c, transform) << "\n\n";
- for(i=0; i<fw_1d_c2c.size(); ++i){
-    std::cout << "FFTW " << transform[i] << "\n";   
-  }
 
   // GSL
   std::cout << "  GSL\n";
@@ -132,13 +130,13 @@ int main(int argc, char** argv){
   std::cout << "  FFTPACK\n";
 
   // r->c
-//  std::cout << "    r->c\n";
-//  fftpack_r2c mkl_1d_r2c(n_dimensions, n_x);
-//  sw.start();
-//  mkl_1d_r2c.compute(signal_r, transform);
-//  sw.stop();
-//  std::cout << "      Time:  " << sw.get() << " s\n";
-//  std::cout << "      Error: " << error(mkl_1d_r2c, signal_r, transform) << "\n\n";
+    std::cout << "    r->c\n";
+    fftpack_r2c fp_1d_r2c(n_x[0]);
+    sw.start();
+    fp_1d_r2c.compute(signal_r, transform);
+    sw.stop();
+    std::cout << "      Time:  " << sw.get() << " s\n";
+    std::cout << "      Error: " << error(fp_1d_r2c, signal_r, transform) << "\n\n";
 
   // c->c
   std::cout << "    c->c\n";
@@ -146,11 +144,8 @@ int main(int argc, char** argv){
   sw.start();
   fp_1d_c2c.compute(signal_c, transform);
   sw.stop();
-  for(i=0; i<fp_1d_c2c.size(); ++i){
-    std::cout << "FFTPACK " << transform[i] << "\n";   
-  }
-//  std::cout << "      Time:  " << sw.get() << " s\n";
-  std::cout << "      Error: " << error(fw_1d_c2c, signal_c, transform) << "\n\n";
+  std::cout << "      Time:  " << sw.get() << " s\n";
+  std::cout << "      Error: " << error(fp_1d_c2c, signal_c, transform) << "\n\n";
 
 
   // 2D
@@ -168,9 +163,9 @@ int main(int argc, char** argv){
     x[0]=((double)k[0])/n_x[0];
     for(k[1]=0; k[1]<n_x[1]; ++k[1]){
       x[1]=((double)k[1])/n_x[1];
-      s=signal(n_dimensions, l_x, a, x);
+      s=signal(n_dimensions, l_x, a, b, x);
       signal_r[k[0]*n_x[1]+k[1]]=s;
-      signal_c[k[0]*n_x[1]+k[1]]=complex(s, s);
+      signal_c[k[0]*n_x[1]+k[1]]=::complex(s, s);
     }
   }
 
@@ -238,10 +233,9 @@ int main(int argc, char** argv){
       x[1]=((double)k[1])/n_x[1];
       for(k[2]=0; k[2]<n_x[2]; ++k[2]){
         x[2]=((double)k[2])/n_x[2];
-        s=signal(n_dimensions
-        , l_x, a, x);
+        s=signal(n_dimensions, l_x, a, b, x);
         signal_r[k[0]*n_x[1]*n_x[2]+k[1]*n_x[2]+k[2]]=s;
-        signal_c[k[0]*n_x[1]*n_x[2]+k[1]*n_x[2]+k[2]]=complex(s, s);
+        signal_c[k[0]*n_x[1]*n_x[2]+k[1]*n_x[2]+k[2]]=::complex(s, s);
       }
     }
   }
