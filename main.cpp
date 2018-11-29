@@ -4,6 +4,7 @@
 #include <iostream>
 #include "stopwatch.hpp"
 #include <omp.h>
+#include "cube.hpp"
 using namespace std;
 
 
@@ -282,8 +283,49 @@ int main(int argc, char** argv){
   mkl_3d_c2c.compute(signal_c, transform);
   sw.stop();
   std::cout << "      Time:  " << sw.get() << " s\n";
-  std::cout << "      Error: " << error(mkl_3d_c2c, signal_c, transform) << "\n\n";
-
+  std::cout << "      Error: " << error(mkl_3d_c2c, signal_c, transform) << "\n\n\n";
+  
+  
+  
+  // CCP PET/MR
+  std::cout << "  CCP PET/MR\n";
+  
+  // Data
+  cube<::complex> slices(n_x[0], n_x[1], n_x[2]);
+  cube<::complex> transforms(n_x[0], n_x[1], n_x[2]);
+  for(k[0]=0; k[0]<n_x[0]; ++k[0]){
+    for(k[1]=0; k[1]<n_x[1]; ++k[1]){
+      for(k[2]=0; k[2]<n_x[2]; ++k[2]){  
+        slices[k[0]][k[1]][k[2]]=signal_c[k[0]*n_x[1]+k[1]];     
+      }
+    }
+  }
+  std::cout << "  FFTW\n";
+  sw.start();
+  for(i=0; i<n_x[2]; ++i){
+    fw_2d_c2c.compute(slices.get_pointer_to_slice(i), transforms.get_pointer_to_slice(i));
+  }
+  sw.stop();
+  std::cout << "      Time:  " << sw.get() << " s\n";
+  double e;
+  e=0;
+  for(i=0; i<n_x[2]; ++i){
+    e=e+error(fw_2d_c2c, slices.get_pointer_to_slice(i), transforms.get_pointer_to_slice(i));
+  }
+  std::cout << "      Error: " << e << "\n\n";
+  
+  std::cout << "  MKL\n";
+  sw.start();
+  for(i=0; i<n_x[2]; ++i){
+    mkl_2d_c2c.compute(slices.get_pointer_to_slice(i), transforms.get_pointer_to_slice(i));
+  }
+  sw.stop();
+  std::cout << "      Time:  " << sw.get() << " s\n";
+  e=0;
+  for(i=0; i<n_x[2]; ++i){
+    e=e+error(mkl_2d_c2c, slices.get_pointer_to_slice(i), transforms.get_pointer_to_slice(i));
+  }
+  std::cout << "      Error: " << e << "\n\n";
   
   delete[] signal_r;
   delete[] signal_c;

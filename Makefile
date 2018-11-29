@@ -4,7 +4,7 @@ FLAGS=-std=c++11 -g2 -fopenmp -lm -lfftw3 -lfftw3_threads -lgslcblas -lgsl -lboo
 
 all: test
 
-test: main.cpp complex.hpp signal.hpp stopwatch.hpp fft.hpp fftpack.o
+test: main.cpp complex.hpp cube.hpp signal.hpp stopwatch.hpp fft.hpp fftpack.o
 	${CXX} fftpack.o main.cpp -o test ${FLAGS}  
 
 fftpack.o: fftpack.h fftpack.c
