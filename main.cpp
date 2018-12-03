@@ -288,7 +288,11 @@ int main(int argc, char** argv){
   
   
   // CCP PET/MR
-  std::cout << "  CCP PET/MR\n";
+  std::cout << "CCP PET/MR\n";
+  unsigned int n_coils=32;
+  std::cout << "N images: " << n_x[2] << "\n";
+  std::cout << "Images size: " << n_x[0] << " x " << n_x[1] << "\n";
+  std::cout << "N coils:     " << n_coils << "\n";
   
   // Data
   cube<::complex> slices(n_x[0], n_x[1], n_x[2]);
@@ -296,14 +300,16 @@ int main(int argc, char** argv){
   for(k[0]=0; k[0]<n_x[0]; ++k[0]){
     for(k[1]=0; k[1]<n_x[1]; ++k[1]){
       for(k[2]=0; k[2]<n_x[2]; ++k[2]){  
-        slices[k[0]][k[1]][k[2]]=signal_c[k[0]*n_x[1]+k[1]];     
+        slices[k[0]][k[1]][k[2]]=signal_c[k[0]*n_x[1]+k[1]]/n_coils;     
       }
     }
   }
   std::cout << "  FFTW\n";
   sw.start();
   for(i=0; i<n_x[2]; ++i){
-    fw_2d_c2c.compute(slices.get_pointer_to_slice(i), transforms.get_pointer_to_slice(i));
+    for(j=0; j<n_coils; ++j){
+      fw_2d_c2c.compute(slices.get_pointer_to_slice(i), transforms.get_pointer_to_slice(i));
+    }
   }
   sw.stop();
   std::cout << "      Time:  " << sw.get() << " s\n";
@@ -317,7 +323,9 @@ int main(int argc, char** argv){
   std::cout << "  MKL\n";
   sw.start();
   for(i=0; i<n_x[2]; ++i){
-    mkl_2d_c2c.compute(slices.get_pointer_to_slice(i), transforms.get_pointer_to_slice(i));
+    for(j=0; j<n_coils; ++j){  
+      mkl_2d_c2c.compute(slices.get_pointer_to_slice(i), transforms.get_pointer_to_slice(i));
+    }
   }
   sw.stop();
   std::cout << "      Time:  " << sw.get() << " s\n";
