@@ -186,6 +186,35 @@ int main(int argc, char** argv){
     }
     std::cout << "      Error: " << error << "\n";
     std::cout << "\n";
+ 
+    
+    std::cout << "    FFTPACK\n";
+    std::cout << "      Direct\n";
+    
+    fftpack_r2c fftpack(n_x[0]);
+    
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      fftpack.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    std::cout << "      Inverse\n";
+    fftpack_r2c fftpacki(n_x[0]);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      fftpacki.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    error=0;
+    for(i=0; i<n_coils; ++i){
+      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
+    }
+    std::cout << "      Error: " << error << "\n";
+    std::cout << "\n";
   }
   
   /*
@@ -214,8 +243,6 @@ int main(int argc, char** argv){
   // MKL
   
 
-  // r->c
-  std::cout << "    r->c\n";
   
 
   // c->c

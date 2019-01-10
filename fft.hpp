@@ -566,37 +566,41 @@ public:
   size_t size_complex() const {
     return ceil(((double)size())/2);
   }
-  int compute(const double* in, ::complex* out) const {
-    for(size_t i=0; i<n[0]; ++i){
-      data[i]=in[i];
-    }
-    F->rfftf(size(), data, w);
-    out[0].x=data[0];
-    out[0].y=0;
-    for(size_t i=1; i<size_complex(); ++i){
-      out[i].x=data[2*i-1];
-      out[i].y=data[2*i];
-    }
-    if(size_complex()>size()/2){
-      out[size_complex()].x=data[size_complex()-1];
-      out[size_complex()].y=-data[size_complex()];
+  int compute(double* in, ::complex* out) const {
+    if(!is_inverse()){
+      for(size_t i=0; i<n[0]; ++i){
+        data[i]=in[i];
+      }
+      F->rfftf(size(), data, w);
+      out[0].x=data[0];
+      out[0].y=0;
+      for(size_t i=1; i<size_complex(); ++i){
+        out[i].x=data[2*i-1];
+        out[i].y=data[2*i];
+      }
+      if(size_complex()>size()/2){
+        out[size_complex()].x=data[size_complex()-1];
+        out[size_complex()].y=-data[size_complex()];
+      }
+    }else{
+      data[0]=out[0].x;
+      for(size_t i=1; i<size_complex(); ++i){
+        data[2*i-1]=out[i].real();
+        data[2*i]=out[i].imag();
+      }
+      if(size_complex()>size()/2){
+        data[size_complex()-1]=out[size_complex()].x;
+        data[size_complex()]=-out[size_complex()].y;
+      }
+      F->rfftb(size(), data, w);
+      for(size_t i=0; i<n[0]; ++i){
+        in[i]=data[i]/size();
+      }
     }
     return 0;
   }
   int compute_inverse(const ::complex* in, double* out) const {
-    data[0]=in[0].x;
-    for(size_t i=1; i<size_complex(); ++i){
-      data[2*i-1]=in[i].real();
-      data[2*i]=in[i].imag();
-    }
-    if(size_complex()>size()/2){
-      data[size_complex()-1]=in[size_complex()].x;
-      data[size_complex()]=-in[size_complex()].y;
-    }
-    F->rfftb(size(), data, w);
-    for(size_t i=0; i<n[0]; ++i){
-      out[i]=data[i]/size();
-    }
+ 
 
     return 0;
   }
