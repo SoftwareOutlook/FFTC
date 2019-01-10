@@ -10,10 +10,9 @@ using namespace std;
 
 int main(int argc, char** argv){
 
-   // cfftf1(
     
-  if(argc<4){
-    std::cout << "Please supply 3 dimensions\n";
+  if(argc<5){
+    std::cout << "Please supply 3 dimensions and a number of coils\n";
     return -1;
   }
 
@@ -29,13 +28,14 @@ int main(int argc, char** argv){
   mkl_set_num_threads_local(omp_get_max_threads());
   
   
-  int i, j, k[3], n_x[3], dim[3], n_dimensions;
+  int i, j, k[3], n_x[3], dim[3], n_dimensions, n_coils;
   double a=0.25;
   double b=a/2;
   double s, x[3], l_x[3]={1, 1, 1};
   for(i=0; i<3; ++i){
     dim[i]=atoi(*(argv+i+1));
   }
+  n_coils=atoi(*(argv+4));
   unsigned long long n_max_elements=dim[0]*dim[1]*dim[2]+1;
   double* signal_r=new double[n_max_elements];
   ::complex* signal_c=new ::complex[n_max_elements];
