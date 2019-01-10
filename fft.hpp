@@ -18,15 +18,16 @@ public:
 protected:
   size_t n_dimensions;
   size_t* n;
-
+  bool inverse;
 
 public:
-  fft(const size_t i_n_dimensions, const size_t* i_n){
+  fft(const size_t i_n_dimensions, const size_t* i_n, bool i_inverse){
     n_dimensions=i_n_dimensions;
     n=new size_t[n_dimensions];
     for(size_t i=0; i<n_dimensions; ++i){
       n[i]=i_n[i];
     }
+    inverse=i_inverse;
   }
   ~fft(){
     delete[] n;
@@ -44,6 +45,9 @@ public:
     }
     return s;
   }
+  bool is_inverse() const {
+    return inverse;   
+  }
   virtual size_t size_complex() const = 0;
   virtual int compute(const ::complex* in, ::complex* out) const {}
   virtual int compute_inverse(const ::complex* in, ::complex* out) const {}
@@ -56,7 +60,7 @@ class fftw : public fft {
 protected:
   fftw_plan plan;
 public:
-  fftw(const size_t i_n_dimensions, const size_t* i_n) : fft(i_n_dimensions, i_n){
+  fftw(const size_t i_n_dimensions, const size_t* i_n, bool i_inverse) : fft(i_n_dimensions, i_n, i_inverse){
   }
 };
 
@@ -65,7 +69,7 @@ class fftw_c2c : public fftw{
 private:
   mutable fftw_complex *fftw_in, *fftw_out;
 public:
-  fftw_c2c(const size_t i_n_dimensions, const size_t* i_n_x) : fftw(i_n_dimensions, i_n_x){
+  fftw_c2c(const size_t i_n_dimensions, const size_t* i_n_x, bool i_inverse=false) : fftw(i_n_dimensions, i_n_x, i_inverse){
     fftw_in=(fftw_complex*)fftw_malloc(sizeof(fftw_complex)*size());
     fftw_out=(fftw_complex*)fftw_malloc(sizeof(fftw_complex)*size());
     plan=fftw_plan_dft(n_dimensions, n, fftw_in, fftw_out,FFTW_FORWARD, FFTW_ESTIMATE);
@@ -114,7 +118,7 @@ private:
   mutable double* fftw_in;
   mutable fftw_complex* fftw_out;
 public:
-  fftw_r2c(const size_t i_n_dimensions, const size_t* i_n_x) : fftw(i_n_dimensions, i_n_x){
+  fftw_r2c(const size_t i_n_dimensions, const size_t* i_n_x, bool i_inverse=false) : fftw(i_n_dimensions, i_n_x, i_inverse){
     fftw_in=(double*)fftw_malloc(sizeof(double)*size());
     fftw_out=(fftw_complex*)fftw_malloc(sizeof(fftw_complex)*size());
     plan=fftw_plan_dft_r2c(n_dimensions, n, fftw_in, fftw_out, FFTW_ESTIMATE);
@@ -165,7 +169,7 @@ class gsl_fft : public fft {
 protected:
 
 public:
-  gsl_fft(const size_t i_n) : fft(1, &i_n){
+  gsl_fft(const size_t i_n, bool i_inverse) : fft(1, &i_n, i_inverse){
   }
 };
 
@@ -176,7 +180,7 @@ private:
   gsl_fft_complex_wavetable* wavetable;
   gsl_fft_complex_workspace* workspace;
 public:
-  gsl_fft_c2c(const size_t i_n) : gsl_fft(i_n){
+  gsl_fft_c2c(const size_t i_n, bool i_inverse=false) : gsl_fft(i_n, i_inverse){
     data=new double[2*size()];
     wavetable=gsl_fft_complex_wavetable_alloc(n[0]);
     workspace=gsl_fft_complex_workspace_alloc(n[0]);
@@ -221,7 +225,7 @@ private:
   gsl_fft_real_wavetable* wavetable;
   gsl_fft_real_workspace* workspace;
 public:
-  gsl_fft_r2c(const size_t i_n) : gsl_fft(i_n){
+  gsl_fft_r2c(const size_t i_n, bool i_inverse=false) : gsl_fft(i_n, i_inverse){
     data=new double[2*size()];
     wavetable=gsl_fft_real_wavetable_alloc(n[0]);
     workspace=gsl_fft_real_workspace_alloc(n[0]);
@@ -279,7 +283,7 @@ public:
 protected:
   DFTI_DESCRIPTOR_HANDLE descriptor_handle;
 public:
-  mkl_fft(const size_t i_n_dimensions, const size_t* i_n) : fft(i_n_dimensions, i_n){
+  mkl_fft(const size_t i_n_dimensions, const size_t* i_n, bool i_inverse) : fft(i_n_dimensions, i_n, i_inverse){
   }
   ~mkl_fft(){
     DftiFreeDescriptor(&descriptor_handle);
@@ -291,7 +295,7 @@ class mkl_fft_c2c : public mkl_fft{
 private:
   mutable MKL_Complex16* data;
 public:
-  mkl_fft_c2c(const size_t i_n_dimensions, const size_t* i_n_x) : mkl_fft(i_n_dimensions, i_n_x){
+  mkl_fft_c2c(const size_t i_n_dimensions, const size_t* i_n_x, bool i_inverse=false) : mkl_fft(i_n_dimensions, i_n_x, i_inverse){
     data=(MKL_Complex16*)mkl_malloc(size()*sizeof(MKL_Complex16)+2, 64);
     if(n_dimensions==1){
       DftiCreateDescriptor(&descriptor_handle, DFTI_DOUBLE, DFTI_COMPLEX, n_dimensions, (long)n[0]);
@@ -345,7 +349,7 @@ private:
   MKL_Complex16* transform;
   long *rstrides, *cstrides;
 public:
-  mkl_fft_r2c(const size_t i_n_dimensions, const size_t* i_n_x) : mkl_fft(i_n_dimensions, i_n_x){
+  mkl_fft_r2c(const size_t i_n_dimensions, const size_t* i_n_x, bool i_inverse=false) : mkl_fft(i_n_dimensions, i_n_x, i_inverse){
     data=(double*)mkl_malloc(size_complex()*2*sizeof(double), 64);
     transform=(MKL_Complex16*)mkl_malloc(size_complex()*sizeof(MKL_Complex16), 64);
     if(n_dimensions==1){
@@ -454,7 +458,7 @@ protected:
     mutable casa::FFTPack* F;
      
 public:
-  fftpack(const size_t i_n) : fft(1, &i_n){
+  fftpack(const size_t i_n, bool i_inverse) : fft(1, &i_n, i_inverse){
     w=new casa_double[4*size()+15];
     F=new casa::FFTPack();
   }
@@ -469,7 +473,7 @@ class fftpack_c2c : public fftpack{
 private:
   mutable casa_complex* data; 
 public:
-  fftpack_c2c(const size_t i_n) : fftpack(i_n){
+  fftpack_c2c(const size_t i_n, bool i_inverse=false) : fftpack(i_n, i_inverse){
     data=new casa_complex[size()];
     F->cffti(size(), w);
   }
@@ -507,7 +511,7 @@ class fftpack_r2c : public fftpack{
 private:
   mutable casa_double* data;
 public:
-  fftpack_r2c(const size_t i_n) : fftpack(i_n){
+  fftpack_r2c(const size_t i_n, bool i_inverse=false) : fftpack(i_n, i_inverse){
     data=new casa_double[size()];
     F->rffti(size(), w);
   }
