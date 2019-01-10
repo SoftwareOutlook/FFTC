@@ -4,7 +4,7 @@
 #include <iostream>
 #include "stopwatch.hpp"
 #include <omp.h>
-//#include "cube.hpp"
+#include "multiarray.hpp"
 using namespace std;
 
 
