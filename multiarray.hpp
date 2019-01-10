@@ -113,7 +113,10 @@ public:
       result.t[i]=t[i]/a;
     }
     return result;
-  }  
+  }
+  inline T* pointer() const {
+    return t;   
+  }
 };
 
 #endif

@@ -5,6 +5,7 @@
 #include "stopwatch.hpp"
 #include <omp.h>
 #include "multiarray.hpp"
+#include <vector>
 using namespace std;
 
 
@@ -36,43 +37,87 @@ int main(int argc, char** argv){
     dim[i]=atoi(*(argv+i+1));
   }
   n_coils=atoi(*(argv+4));
+  
+  /*
   unsigned long long n_max_elements=dim[0]*dim[1]*dim[2]+1;
   double* signal_r=new double[n_max_elements];
   ::complex* signal_c=new ::complex[n_max_elements];
   ::complex* transform=new ::complex[n_max_elements];
+  */
+  
   stopwatch sw;
 
 
   // 1D
-
-  // Signal
-  n_dimensions=1;
-  n_x[0]=dim[0]*dim[1];
-  std::cout << "Dimensions: ";
-  for(i=0; i<n_dimensions; ++i){
-    std::cout << n_x[i] << " ";
-  }
-  std::cout << "\n";
-  for(k[0]=0; k[0]<n_x[0]; ++k[0]){
-    x[0]=((double)k[0])/n_x[0];
-    s=signal(1, l_x, a, b, x);
-    signal_r[k[0]]=s;
-    signal_c[k[0]]=::complex(s, s);
-  }
-
-
-  // FFTW
-  std::cout << "  FFTW\n";
+  
+  // R <-> HC
+  
+  {
+    // Dimensions
+    n_dimensions=1;
+    n_x[0]=dim[0];
+    std::cout << "Dimensions: ";
+    for(i=0; i<n_dimensions; ++i){
+      std::cout << n_x[i] << " ";
+    }
+    std::cout << "\n";
+    std::cout << "N coils: " << n_coils << "\n";
+    std::cout << "\n";
+    std::cout << "    R <-> HC\n";
+    
+    // Signal
+    multiarray<double> sig({n_x[0]});
+    for(k[0]=0; k[0]<n_x[0]; ++k[0]){
+      x[0]=((double)k[0])/n_x[0];
+      s=signal(1, l_x, a, b, x);
+      sig(k[0])=s;
+    }
+    
+    // Coils
+    multiarray<double> coil({n_x[0]});
+    for(k[0]=0; k[0]<n_x[0]; ++k[0]){
+      coil(k[0])=1./n_coils;
+    }   
+    std::vector<multiarray<double>> coils;
+    for(i=0; i<n_coils; ++i){
+      coils.push_back(coil);   
+    }
+    
+    // Multiplied signals
+    std::vector<multiarray<double>> multiplied_signals;
+    std::vector<multiarray<::complex>> transforms;
+    for(i=0; i<n_coils; ++i){
+      multiplied_signals.push_back(sig*coils[i]); 
+      transforms.push_back(multiarray<::complex>({n_x[0]/2+1}));
+    }
+    
+    
+    // FFTW
+    std::cout << "  FFTW\n";
+    
+    fftw_r2c fw(n_dimensions, n_x);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "      Time:  " << sw.get() << " s\n";
+    
+/*
+  
 
   // r->c
-  std::cout << "    r->c\n";
-  fftw_r2c fw_1d_r2c(n_dimensions, n_x);
-  sw.start();
-  fw_1d_r2c.compute(signal_r, transform);
-  sw.stop();
-  std::cout << "      Time:  " << sw.get() << " s\n";
+  
+  
+  
+  
+  
+  
   std::cout << "      Error: " << error(fw_1d_r2c, signal_r, transform) << "\n\n";
-
+*/
+  }
+  
+  /*
 
   // c->c
   std::cout << "    c->c\n";
@@ -334,12 +379,13 @@ int main(int argc, char** argv){
     e=e+error(mkl_2d_c2c, slices.get_pointer_to_slice(i), transforms.get_pointer_to_slice(i));
   }
   std::cout << "      Error: " << e << "\n\n";
-*/  
+*/
+/*  
   delete[] signal_r;
   delete[] signal_c;
   delete[] transform;
   
-  
+*/  
    
    
   fftw_cleanup_threads();
