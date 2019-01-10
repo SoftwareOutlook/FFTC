@@ -32,7 +32,7 @@ int main(int argc, char** argv){
   int i, j, k[3], n_x[3], dim[3], n_dimensions, n_coils;
   double a=0.25;
   double b=a/2;
-  double s, x[3], l_x[3]={1, 1, 1};
+  double s, x[3], l_x[3]={1, 1, 1}, error;
   for(i=0; i<3; ++i){
     dim[i]=atoi(*(argv+i+1));
   }
@@ -63,7 +63,8 @@ int main(int argc, char** argv){
     std::cout << "\n";
     std::cout << "N coils: " << n_coils << "\n";
     std::cout << "\n";
-    std::cout << "    R <-> HC\n";
+    std::cout << "  R <-> HC\n";
+    std::cout << "\n";
     
     // Signal
     multiarray<double> sig({n_x[0]});
@@ -86,14 +87,17 @@ int main(int argc, char** argv){
     // Multiplied signals
     std::vector<multiarray<double>> multiplied_signals;
     std::vector<multiarray<::complex>> transforms;
+    std::vector<multiarray<double>> inverse_transforms;
     for(i=0; i<n_coils; ++i){
       multiplied_signals.push_back(sig*coils[i]); 
       transforms.push_back(multiarray<::complex>({n_x[0]/2+1}));
+      inverse_transforms.push_back(multiarray<double>({n_x[0]}));
     }
     
     
     // FFTW
-    std::cout << "  FFTW\n";
+    std::cout << "    FFTW\n";
+    std::cout << "      Direct\n";
     
     fftw_r2c fw(n_dimensions, n_x);
     sw.start();
@@ -101,8 +105,23 @@ int main(int argc, char** argv){
       fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "      Time:  " << sw.get() << " s\n";
+    std::cout << "        Time:  " << sw.get() << " s\n";
     
+    std::cout << "      Inverse\n";
+    
+    fftw_r2c fwi(n_dimensions, n_x, true);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    error=0;
+    for(i=0; i<n_coils; ++i){
+      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
+    }
+    std::cout << "      Error: " << error << "\n";
+    std::cout << "\n";
 /*
   
 

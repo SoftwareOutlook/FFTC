@@ -49,7 +49,7 @@ public:
     return inverse;   
   }
   virtual size_t size_complex() const = 0;
-  virtual int compute(const ::complex* in, ::complex* out) const {}
+  virtual int compute(::complex* in, ::complex* out) const {}
   virtual int compute_inverse(const ::complex* in, ::complex* out) const {}
   virtual int compute(const double* in, ::complex* out) const {}
   virtual int compute_inverse(const ::complex* in, double* out) const {}
@@ -72,7 +72,11 @@ public:
   fftw_c2c(const size_t i_n_dimensions, const size_t* i_n_x, bool i_inverse=false) : fftw(i_n_dimensions, i_n_x, i_inverse){
     fftw_in=(fftw_complex*)fftw_malloc(sizeof(fftw_complex)*size());
     fftw_out=(fftw_complex*)fftw_malloc(sizeof(fftw_complex)*size());
-    plan=fftw_plan_dft(n_dimensions, n, fftw_in, fftw_out,FFTW_FORWARD, FFTW_ESTIMATE);
+    if(!is_inverse()){
+      plan=fftw_plan_dft(n_dimensions, n, fftw_in, fftw_out,FFTW_FORWARD, FFTW_ESTIMATE);
+    }else{
+      plan=fftw_plan_dft(n_dimensions, n, fftw_in, fftw_out,FFTW_BACKWARD, FFTW_ESTIMATE);  
+    }
   }
   ~fftw_c2c(){
     fftw_destroy_plan(plan);
@@ -89,13 +93,21 @@ public:
       fftw_in[i][1]=in[i].imag();
     }
     fftw_execute(plan);
-    for(i=0; i<size(); ++i){
-      out[i].x=fftw_out[i][0];
-      out[i].y=fftw_out[i][1];
+    if(!is_inverse()){
+      for(i=0; i<size(); ++i){
+        out[i].x=fftw_out[i][0];
+        out[i].y=fftw_out[i][1];
+      }
+    }else{
+      for(i=0; i<size(); ++i){
+        out[i].x=fftw_out[i][0]/size();
+        out[i].y=fftw_out[i][1]/size();
+      }      
     }
     return 0;
   }
   int compute_inverse(const ::complex* in, ::complex* out) const {
+    
     fftw_plan inverse_plan=fftw_plan_dft(n_dimensions, n, fftw_in, fftw_out, FFTW_BACKWARD, FFTW_ESTIMATE);
     fft::size_t i;
     for(i=0; i<size(); ++i){
@@ -121,7 +133,11 @@ public:
   fftw_r2c(const size_t i_n_dimensions, const size_t* i_n_x, bool i_inverse=false) : fftw(i_n_dimensions, i_n_x, i_inverse){
     fftw_in=(double*)fftw_malloc(sizeof(double)*size());
     fftw_out=(fftw_complex*)fftw_malloc(sizeof(fftw_complex)*size());
-    plan=fftw_plan_dft_r2c(n_dimensions, n, fftw_in, fftw_out, FFTW_ESTIMATE);
+    if(!is_inverse()){
+      plan=fftw_plan_dft_r2c(n_dimensions, n, fftw_in, fftw_out, FFTW_ESTIMATE);
+    }else{
+      plan=fftw_plan_dft_c2r(n_dimensions, n, fftw_out, fftw_in, FFTW_ESTIMATE);  
+    }
   }
   ~fftw_r2c(){
     fftw_destroy_plan(plan);
@@ -136,15 +152,26 @@ public:
     s=s*(n[n_dimensions-1]/2+1);
     return s;
   }
-  int compute(const double* in, ::complex* out) const {
+  int compute(double* in, ::complex* out) const {
     size_t i;
-    for(i=0; i<size(); ++i){
-      fftw_in[i]=in[i];
-    }
-    fftw_execute(plan);
-    for(i=0; i<size_complex(); ++i){
-      out[i].x=fftw_out[i][0];
-      out[i].y=fftw_out[i][1];
+    if(!is_inverse()){
+      for(i=0; i<size(); ++i){
+        fftw_in[i]=in[i];
+      }
+      fftw_execute(plan);
+      for(i=0; i<size_complex(); ++i){
+        out[i].x=fftw_out[i][0];
+        out[i].y=fftw_out[i][1];
+      }
+    }else{
+      for(i=0; i<size_complex(); ++i){
+        fftw_out[i][0]=out[i].x;
+        fftw_out[i][1]=out[i].y;
+      }
+      fftw_execute(plan);
+      for(i=0; i<size(); ++i){
+        in[i]=fftw_in[i]/size();
+      }
     }
     return 0;
   }
@@ -557,7 +584,7 @@ public:
   }
 };
 
-
+/*
 double error(const fft& f, const ::complex* in, const ::complex* out){
   ::complex* inverse_transform=new ::complex[f.size()];
   f.compute_inverse(out, inverse_transform);
@@ -579,6 +606,6 @@ double error(const fft& f, const double* in, const ::complex* out){
   delete[] inverse_transform;
   return e;
 }
-
+*/
 
 #endif

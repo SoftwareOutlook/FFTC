@@ -44,5 +44,17 @@ public:
 
 };
 
+double norm(const double& a){
+  if(a>=0){
+    return a;   
+  }else{
+    return -a;   
+  }
+}
+
+double norm(const complex& z){
+  return sqrt(pow(z.real(), 2)+pow(z.imag(), 2));   
+}
+
 
 #endif

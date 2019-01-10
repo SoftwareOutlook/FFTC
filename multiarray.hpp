@@ -2,7 +2,7 @@
 #define MULTIARRAY_HPP
 
 #include <vector>
-
+#include "complex"
 
 template<class T> class multiarray{
 public:
@@ -113,6 +113,13 @@ public:
       result.t[i]=t[i]/a;
     }
     return result;
+  }
+  double norm() const{
+    double N=0;
+    for(size_t i=0; i<size(); ++i){
+      N=N+::norm(t[i]);   
+    }
+    return N;
   }
   inline T* pointer() const {
     return t;   
