@@ -250,55 +250,72 @@ class gsl_fft_r2c : public gsl_fft{
 private:
   mutable double* data;
   gsl_fft_real_wavetable* wavetable;
+  gsl_fft_halfcomplex_wavetable* inverse_wavetable;
   gsl_fft_real_workspace* workspace;
+  
 public:
   gsl_fft_r2c(const size_t i_n, bool i_inverse=false) : gsl_fft(i_n, i_inverse){
     data=new double[2*size()];
-    wavetable=gsl_fft_real_wavetable_alloc(n[0]);
+    if(!is_inverse()){
+      wavetable=gsl_fft_real_wavetable_alloc(n[0]);
+    }else{
+      inverse_wavetable=gsl_fft_halfcomplex_wavetable_alloc(n[0]);
+    }
     workspace=gsl_fft_real_workspace_alloc(n[0]);
   }
   ~gsl_fft_r2c(){
     delete[] data;  
-    gsl_fft_real_wavetable_free(wavetable);
+    if(!is_inverse()){
+      gsl_fft_real_wavetable_free(wavetable);
+    }else{
+      gsl_fft_halfcomplex_wavetable_free(inverse_wavetable);
+    }
     gsl_fft_real_workspace_free(workspace);
   }
   size_t size_complex() const {
-    return ceil(((double)size())/2);
+    return size()/2+1;
   }
-  int compute(const double* in, ::complex* out) const {
-    for(size_t i=0; i<n[0]; ++i){
-      data[i]=in[i];
+  int compute(double* in, ::complex* out) const {
+    if(!is_inverse()){      
+      for(size_t i=0; i<n[0]; ++i){
+        data[i]=in[i];
+      }    
+      gsl_fft_real_transform(data, 1, n[0], wavetable, workspace);
+      out[0].x=data[0];
+      out[0].y=0;
+      for(size_t i=1; i<size_complex(); ++i){
+        out[i].x=data[2*i-1];
+        out[i].y=data[2*i];
+      }
+      if(size_complex()>size()/2){
+        out[size_complex()].x=data[size_complex()-1];
+        out[size_complex()].y=-data[size_complex()];
+      }
+    }else{
+      data[0]=out[0].x;
+      for(size_t i=1; i<size_complex(); ++i){
+        data[2*i-1]=out[i].real();
+        data[2*i]=out[i].imag();
+      }
+      if(size_complex()>size()/2){
+        data[size_complex()-1]=out[size_complex()].x;
+        data[size_complex()]=-out[size_complex()].y;
+      }
+      gsl_fft_halfcomplex_inverse(data, 1, n[0], inverse_wavetable, workspace);
+      for(size_t i=0; i<n[0]; ++i){
+        in[i]=data[i];
+      }
     }
-    gsl_fft_real_transform(data, 1, n[0], wavetable, workspace);
-    out[0].x=data[0];
-    out[0].y=0;
-    for(size_t i=1; i<size_complex(); ++i){
-      out[i].x=data[2*i-1];
-      out[i].y=data[2*i];
-    }
-    if(size_complex()>size()/2){
-      out[size_complex()].x=data[size_complex()-1];
-      out[size_complex()].y=-data[size_complex()];
-    }
-    return 0;
+      return 0;
   }
   int compute_inverse(const ::complex* in, double* out) const {
-    data[0]=in[0].x;
-    for(size_t i=1; i<size_complex(); ++i){
-      data[2*i-1]=in[i].real();
-      data[2*i]=in[i].imag();
-    }
-    if(size_complex()>size()/2){
-      data[size_complex()-1]=in[size_complex()].x;
-      data[size_complex()]=-in[size_complex()].y;
-    }
-    gsl_fft_halfcomplex_wavetable* inverse_wavetable;
-    inverse_wavetable=gsl_fft_halfcomplex_wavetable_alloc(n[0]);
-    gsl_fft_halfcomplex_inverse(data, 1, n[0], inverse_wavetable, workspace);
-    for(size_t i=0; i<n[0]; ++i){
-      out[i]=data[i];
-    }
-    gsl_fft_halfcomplex_wavetable_free(inverse_wavetable);
+    
+ 
+    
+    
+    
+ 
+    
     return 0;
   }
 };
@@ -342,6 +359,7 @@ public:
     return size();
   }
   int compute(const ::complex* in, ::complex* out) const {
+    
     size_t i, j;
     for(i=0; i<size(); ++i){
       data[i].real=in[i].real();

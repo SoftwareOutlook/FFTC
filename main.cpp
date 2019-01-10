@@ -90,7 +90,7 @@ int main(int argc, char** argv){
     std::vector<multiarray<double>> inverse_transforms;
     for(i=0; i<n_coils; ++i){
       multiplied_signals.push_back(sig*coils[i]); 
-      transforms.push_back(multiarray<::complex>({n_x[0]/2+1}));
+      transforms.push_back(multiarray<::complex>({n_x[0]/2+2})); // +2 rather than +1 because of GSL
       inverse_transforms.push_back(multiarray<double>({n_x[0]}));
     }
     
@@ -107,6 +107,7 @@ int main(int argc, char** argv){
     sw.stop();
     std::cout << "        Time:  " << sw.get() << " s\n";
     
+    
     std::cout << "      Inverse\n";
     
     fftw_r2c fwi(n_dimensions, n_x, true);
@@ -116,24 +117,60 @@ int main(int argc, char** argv){
     }
     sw.stop();
     std::cout << "        Time:  " << sw.get() << " s\n";
+    
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
     std::cout << "      Error: " << error << "\n";
     std::cout << "\n";
-/*
-  
+    
+    
+    
+    std::cout << "    GSL\n";
+    std::cout << "      Direct\n";
+    
+    gsl_fft_r2c gsl(n_x[0]);
 
-  // r->c
-  
-  
-  
-  
-  
-  
-  std::cout << "      Error: " << error(fw_1d_r2c, signal_r, transform) << "\n\n";
-*/
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      gsl.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+     
+    std::cout << "      Inverse\n";
+    
+    gsl_fft_r2c gsli(n_x[0], true);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+
+    error=0;
+    for(i=0; i<n_coils; ++i){
+      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
+    }
+    std::cout << "      Error: " << error << "\n";
+    std::cout << "\n";
+    
+    
+    
+    std::cout << "    MKL\n";
+    std::cout << "      Direct\n";
+    
+    mkl_fft_r2c mkl(n_dimensions, n_x);
+    
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      mkl.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
   }
   
   /*
@@ -141,23 +178,13 @@ int main(int argc, char** argv){
   // c->c
   std::cout << "    c->c\n";
   fftw_c2c fw_1d_c2c(n_dimensions, n_x);
-  sw.start();
+  
   fw_1d_c2c.compute(signal_c, transform);
-  sw.stop();
+  
   std::cout << "      Time:  " << sw.get() << " s\n";
   std::cout << "      Error: " << error(fw_1d_c2c, signal_c, transform) << "\n\n";
 
-  // GSL
-  std::cout << "  GSL\n";
-
-  // r->c
-  std::cout << "    r->c\n";
-  gsl_fft_r2c gsl_r2c(n_x[0]);
-  sw.start();
-  gsl_r2c.compute(signal_r, transform);
-  sw.stop();
-  std::cout << "      Time:  " << sw.get() << " s\n";
-  std::cout << "      Error: " << error(gsl_r2c, signal_r, transform) << "\n\n";
+ 
 
   // c->c
   std::cout << "    c->c\n";
@@ -170,16 +197,11 @@ int main(int argc, char** argv){
  
 
   // MKL
-  std::cout << "  MKL\n";
+  
 
   // r->c
   std::cout << "    r->c\n";
-  mkl_fft_r2c mkl_1d_r2c(n_dimensions, n_x);
-  sw.start();
-  mkl_1d_r2c.compute(signal_r, transform);
-  sw.stop();
-  std::cout << "      Time:  " << sw.get() << " s\n";
-  std::cout << "      Error: " << error(mkl_1d_r2c, signal_r, transform) << "\n\n";
+  
 
   // c->c
   std::cout << "    c->c\n";
