@@ -434,8 +434,13 @@ public:
         std::cout << "The strides are computed only in 1, 2 or 3 dimensions.\n";
          break; 
     }
-    DftiSetValue(descriptor_handle, DFTI_INPUT_STRIDES, rstrides);
-    DftiSetValue(descriptor_handle, DFTI_OUTPUT_STRIDES, cstrides);
+    if(!is_inverse()){
+      DftiSetValue(descriptor_handle, DFTI_INPUT_STRIDES, rstrides);
+      DftiSetValue(descriptor_handle, DFTI_OUTPUT_STRIDES, cstrides);
+    }else{
+      DftiSetValue(descriptor_handle, DFTI_INPUT_STRIDES, cstrides);
+      DftiSetValue(descriptor_handle, DFTI_OUTPUT_STRIDES, rstrides);
+    }
     DftiCommitDescriptor(descriptor_handle);
  //   std::cout << "strides\n";
  //   for(size_t i=0; i<=n_dimensions; ++i){
@@ -456,38 +461,33 @@ public:
     s=s*(n[n_dimensions-1]/2+1);
     return s;
   }
-  int compute(const double* in, ::complex* out) const {
+  int compute(double* in, ::complex* out) const {
     size_t i;
-    for(i=0; i<size(); ++i){
-      data[i]=in[i];
-    }
-    DftiComputeForward(descriptor_handle, data, transform);
-    for(i=0; i<size_complex(); ++i){
-      out[i].x=transform[i].real;
-      out[i].y=transform[i].imag;
+    if(!is_inverse()){
+      for(i=0; i<size(); ++i){
+        data[i]=in[i];
+      }
+      DftiComputeForward(descriptor_handle, data, transform);
+      for(i=0; i<size_complex(); ++i){
+        out[i].x=transform[i].real;
+        out[i].y=transform[i].imag;
+      }
+    }else{
+      for(i=0; i<size_complex(); ++i){
+        transform[i].real=out[i].real();
+        transform[i].imag=out[i].imag();
+      }
+      DftiComputeBackward(descriptor_handle, transform, data);
+      for(i=0; i<size(); ++i){
+        in[i]=data[i]/size();
+      }
     }
     return 0;
   }
+  
   int compute_inverse(const ::complex* in, double* out) const {
-    size_t i;
-    for(i=0; i<size_complex(); ++i){
-      transform[i].real=in[i].real();
-      transform[i].imag=in[i].imag();
-    }
-    
-    DftiSetValue(descriptor_handle, DFTI_INPUT_STRIDES, cstrides);
-    DftiSetValue(descriptor_handle, DFTI_OUTPUT_STRIDES, rstrides);
-    DftiCommitDescriptor(descriptor_handle);
-    
-    DftiComputeBackward(descriptor_handle, transform, data);
-    
-    DftiSetValue(descriptor_handle, DFTI_INPUT_STRIDES, rstrides);
-    DftiSetValue(descriptor_handle, DFTI_OUTPUT_STRIDES, cstrides);
-    DftiCommitDescriptor(descriptor_handle);
-        
-    for(i=0; i<size(); ++i){
-      out[i]=data[i]/size();
-    }
+          
+ 
     
     return 0;
   }

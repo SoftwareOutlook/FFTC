@@ -171,6 +171,21 @@ int main(int argc, char** argv){
     sw.stop();
     std::cout << "        Time:  " << sw.get() << " s\n";
     
+    std::cout << "      Inverse\n";
+    mkl_fft_r2c mkli(n_dimensions, n_x);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      mkli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    error=0;
+    for(i=0; i<n_coils; ++i){
+      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
+    }
+    std::cout << "      Error: " << error << "\n";
+    std::cout << "\n";
   }
   
   /*
