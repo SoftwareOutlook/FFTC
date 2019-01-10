@@ -4,7 +4,7 @@
 #include <iostream>
 #include "stopwatch.hpp"
 #include <omp.h>
-#include "cube.hpp"
+//#include "cube.hpp"
 using namespace std;
 
 
@@ -286,7 +286,7 @@ int main(int argc, char** argv){
   std::cout << "      Error: " << error(mkl_3d_c2c, signal_c, transform) << "\n\n\n";
   
   
-  
+  /*
   // CCP PET/MR
   std::cout << "CCP PET/MR\n";
   unsigned int n_coils=32;
@@ -334,7 +334,7 @@ int main(int argc, char** argv){
     e=e+error(mkl_2d_c2c, slices.get_pointer_to_slice(i), transforms.get_pointer_to_slice(i));
   }
   std::cout << "      Error: " << e << "\n\n";
-  
+*/  
   delete[] signal_r;
   delete[] signal_c;
   delete[] transform;
