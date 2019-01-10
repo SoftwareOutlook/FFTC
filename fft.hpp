@@ -375,31 +375,33 @@ public:
   size_t size_complex() const {
     return size();
   }
-  int compute(const ::complex* in, ::complex* out) const {
-    
-    size_t i, j;
-    for(i=0; i<size(); ++i){
-      data[i].real=in[i].real();
-      data[i].imag=in[i].imag();
-    }
-    DftiComputeForward(descriptor_handle, data);
-    for(i=0; i<size(); ++i){
-      out[i].x=data[i].real;
-      out[i].y=data[i].imag;
+  int compute(::complex* in, ::complex* out) const {
+    size_t i;
+    if(!is_inverse()){
+      for(i=0; i<size(); ++i){
+        data[i].real=in[i].real();
+        data[i].imag=in[i].imag();
+      }
+      DftiComputeForward(descriptor_handle, data);
+      for(i=0; i<size(); ++i){
+        out[i].x=data[i].real;
+        out[i].y=data[i].imag;
+      }
+    }else{
+      for(i=0; i<size(); ++i){
+        data[i].real=out[i].real();
+        data[i].imag=out[i].imag();
+      }
+      DftiComputeBackward(descriptor_handle, data);
+      for(i=0; i<size_complex(); ++i){
+        in[i].x=data[i].real/size();
+        in[i].y=data[i].imag/size();
+      }
     }
     return 0;
   }
   int compute_inverse(const ::complex* in, ::complex* out) const {
-    size_t i;
-    for(i=0; i<size(); ++i){
-      data[i].real=in[i].real();
-      data[i].imag=in[i].imag();
-    }
-    DftiComputeBackward(descriptor_handle, data);
-    for(i=0; i<size_complex(); ++i){
-      out[i].x=data[i].real/size();
-      out[i].y=data[i].imag/size();
-    }
+ 
     return 0;
   }
 };
@@ -545,7 +547,13 @@ public:
   size_t size_complex() const {
     return size();
   }
-  int compute(const ::complex* in, ::complex* out) const {
+  int compute(::complex* in, ::complex* out) const {
+    if(is_inverse()){
+      ::complex* buffer;
+      buffer=in;
+      in=out;
+      out=buffer;
+    }
     for(size_t i=0; i<n[0]; ++i){
       data[i]=casa_complex(in[i].real(), in[i].imag());
     }

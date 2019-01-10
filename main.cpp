@@ -318,6 +318,69 @@ int main(int argc, char** argv){
     std::cout << "      Error: " << error << "\n";
     std::cout << "\n"; 
     
+    
+    // MKL
+    std::cout << "    MKL\n";
+    std::cout << "      Direct\n";
+    
+    
+    mkl_fft_c2c mkl(n_dimensions, n_x);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    
+    std::cout << "      Inverse\n";
+    
+    mkl_fft_c2c mkli(n_dimensions, n_x, true);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    error=0;
+    for(i=0; i<n_coils; ++i){
+      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
+    }
+    std::cout << "      Error: " << error << "\n";
+    std::cout << "\n";    
+    
+    
+    // FFTPACK
+    std::cout << "    FFTPACK\n";
+    std::cout << "      Direct\n";
+    
+    fftpack_c2c fftpack(n_x[0]);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    
+    std::cout << "      Inverse\n";
+    
+    fftpack_c2c fftpacki(n_x[0], true);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    error=0;
+    for(i=0; i<n_coils; ++i){
+      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
+    }
+    std::cout << "      Error: " << error << "\n";
+    std::cout << "\n";    
+    
   }
   
   
