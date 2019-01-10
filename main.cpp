@@ -286,20 +286,45 @@ int main(int argc, char** argv){
     std::cout << "      Error: " << error << "\n";
     std::cout << "\n"; 
     
+    
+    // GSL
+    std::cout << "    GSL\n";
+    std::cout << "      Direct\n";
+    
+    
+    gsl_fft_c2c gsl(n_x[0]);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    
+    std::cout << "      Inverse\n";
+    
+    gsl_fft_c2c gsli(n_x[0], true);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    error=0;
+    for(i=0; i<n_coils; ++i){
+      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
+    }
+    std::cout << "      Error: " << error << "\n";
+    std::cout << "\n"; 
+    
   }
   
   
   
   /*
 
-  // c->c
-  std::cout << "    c->c\n";
-  fftw_c2c fw_1d_c2c(n_dimensions, n_x);
   
-  fw_1d_c2c.compute(signal_c, transform);
-  
-  std::cout << "      Time:  " << sw.get() << " s\n";
-  std::cout << "      Error: " << error(fw_1d_c2c, signal_c, transform) << "\n\n";
 
  
 

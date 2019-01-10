@@ -225,15 +225,27 @@ public:
   size_t size_complex() const {
     return size();
   }
-  int compute(const ::complex* in, ::complex* out) const {
-    for(size_t i=0; i<n[0]; ++i){
-      data[2*i]=in[i].real();
-      data[2*i+1]=in[i].imag();
-    }
-    gsl_fft_complex_forward(data, 1, n[0], wavetable, workspace);
-    for(size_t i=0; i<n[0]; ++i){
-      out[i].x=data[2*i];
-      out[i].y=data[2*i+1];
+  int compute(::complex* in, ::complex* out) const {
+    if(!is_inverse()){
+      for(size_t i=0; i<n[0]; ++i){
+        data[2*i]=in[i].real();
+        data[2*i+1]=in[i].imag();
+      }
+      gsl_fft_complex_forward(data, 1, n[0], wavetable, workspace);
+      for(size_t i=0; i<n[0]; ++i){
+        out[i].x=data[2*i];
+        out[i].y=data[2*i+1];
+      }
+    }else{
+      for(size_t i=0; i<n[0]; ++i){
+        data[2*i]=out[i].real();
+        data[2*i+1]=out[i].imag();
+      }
+      gsl_fft_complex_backward(data, 1, n[0], wavetable, workspace);
+      for(size_t i=0; i<n[0]; ++i){
+        in[i].x=data[2*i]/size();
+        in[i].y=data[2*i+1]/size();
+      }
     }
     return 0;
   }
