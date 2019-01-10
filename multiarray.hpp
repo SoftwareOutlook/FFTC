@@ -72,6 +72,9 @@ public:
     (... , void(k[i++] = indices));
     return t[compute_index(k)];
   }
+  inline T get(const size_t i) const {
+    return t[i];   
+  }
   inline multiarray operator+(const multiarray& other){
     multiarray result(dimensions);
     for(size_t i=0; i<size(); ++i){
@@ -86,10 +89,10 @@ public:
     }
     return result;
   }
-  inline multiarray operator*(const multiarray& other){
+  template<class U> inline multiarray operator*(const multiarray<U>& other){
     multiarray result(dimensions);
     for(size_t i=0; i<size(); ++i){
-      result.t[i]=t[i]*other.t[i];
+      result.t[i]=t[i]*other.get(i);
     }
     return result;
   }
@@ -100,10 +103,10 @@ public:
     }
     return result;
   }
-  inline multiarray operator/(const multiarray& other){
+  template<class U> inline multiarray operator/(const multiarray<U>& other){
     multiarray result(dimensions);
     for(size_t i=0; i<size(); ++i){
-      result.t[i]=t[i]/other.t[i];
+      result.t[i]=t[i]/other.get[i];
     }
     return result;
   }

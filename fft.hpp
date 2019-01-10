@@ -86,23 +86,28 @@ public:
   size_t size_complex() const {
     return size();
   }
-  int compute(const ::complex* in, ::complex* out) const {
+  int compute(::complex* in, ::complex* out) const {
     size_t i;
-    for(i=0; i<size(); ++i){
-      fftw_in[i][0]=in[i].real();
-      fftw_in[i][1]=in[i].imag();
-    }
-    fftw_execute(plan);
     if(!is_inverse()){
+      for(i=0; i<size(); ++i){
+        fftw_in[i][0]=in[i].real();
+        fftw_in[i][1]=in[i].imag();
+      }
+      fftw_execute(plan);
       for(i=0; i<size(); ++i){
         out[i].x=fftw_out[i][0];
         out[i].y=fftw_out[i][1];
       }
     }else{
       for(i=0; i<size(); ++i){
-        out[i].x=fftw_out[i][0]/size();
-        out[i].y=fftw_out[i][1]/size();
-      }      
+        fftw_in[i][0]=out[i].real();
+        fftw_in[i][1]=out[i].imag();
+      }
+      fftw_execute(plan);
+      for(i=0; i<size(); ++i){
+        in[i].x=fftw_out[i][0]/size();
+        in[i].y=fftw_out[i][1]/size();
+      }       
     }
     return 0;
   }

@@ -50,12 +50,14 @@ int main(int argc, char** argv){
 
   // 1D
   
+  n_dimensions=1;
+  n_x[0]=dim[0];
+  
   // R <-> HC
   
   {
     // Dimensions
-    n_dimensions=1;
-    n_x[0]=dim[0];
+    
     std::cout << "Dimensions: ";
     for(i=0; i<n_dimensions; ++i){
       std::cout << n_x[i] << " ";
@@ -216,6 +218,77 @@ int main(int argc, char** argv){
     std::cout << "      Error: " << error << "\n";
     std::cout << "\n";
   }
+  
+  
+    // C <-> C
+  
+  {
+    // Dimensions
+    std::cout << "  R <-> HC\n";
+    std::cout << "\n";
+    
+    // Signal
+    multiarray<::complex> sig({n_x[0]});
+    for(k[0]=0; k[0]<n_x[0]; ++k[0]){
+      x[0]=((double)k[0])/n_x[0];
+      s=signal(1, l_x, a, b, x);
+      sig(k[0])=::complex(s, s);
+    }
+    
+    // Coils
+    multiarray<double> coil({n_x[0]});
+    for(k[0]=0; k[0]<n_x[0]; ++k[0]){
+      coil(k[0])=1./n_coils;
+    }   
+    std::vector<multiarray<double>> coils;
+    for(i=0; i<n_coils; ++i){
+      coils.push_back(coil);   
+    }
+    
+    // Multiplied signals
+    std::vector<multiarray<::complex>> multiplied_signals;
+    std::vector<multiarray<::complex>> transforms;
+    std::vector<multiarray<::complex>> inverse_transforms;
+    for(i=0; i<n_coils; ++i){
+      multiplied_signals.push_back(sig*coils[i]); 
+      transforms.push_back(multiarray<::complex>({n_x[0]})); 
+      inverse_transforms.push_back(multiarray<::complex>({n_x[0]}));
+    }
+    
+    
+    // FFTW
+    std::cout << "    FFTW\n";
+    std::cout << "      Direct\n";
+    
+    fftw_c2c fw(n_dimensions, n_x);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    
+    std::cout << "      Inverse\n";
+    
+    fftw_c2c fwi(n_dimensions, n_x, true);
+    sw.start();
+    for(i=0; i<n_coils; ++i){
+      fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
+    }
+    sw.stop();
+    std::cout << "        Time:  " << sw.get() << " s\n";
+    
+    error=0;
+    for(i=0; i<n_coils; ++i){
+      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
+    }
+    std::cout << "      Error: " << error << "\n";
+    std::cout << "\n"; 
+    
+  }
+  
+  
   
   /*
 
