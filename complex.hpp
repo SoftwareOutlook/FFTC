@@ -4,7 +4,7 @@
 #include <math.h>
 #include <iostream>
 
-
+    
 class complex{
 public:
   typedef double float_t;

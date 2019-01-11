@@ -12,6 +12,7 @@
 #include "fftpack.h"
 #include <casacore/scimath/Mathematics/FFTPack.h>
 
+   
 class fft{
 public:
   typedef int size_t;
@@ -50,9 +51,7 @@ public:
   }
   virtual size_t size_complex() const = 0;
   virtual int compute(::complex* in, ::complex* out) const {}
-  virtual int compute_inverse(const ::complex* in, ::complex* out) const {}
-  virtual int compute(const double* in, ::complex* out) const {}
-  virtual int compute_inverse(const ::complex* in, double* out) const {}
+  virtual int compute(double* in, ::complex* out) const {}
 };
 
 
@@ -111,22 +110,6 @@ public:
     }
     return 0;
   }
-  int compute_inverse(const ::complex* in, ::complex* out) const {
-    
-    fftw_plan inverse_plan=fftw_plan_dft(n_dimensions, n, fftw_in, fftw_out, FFTW_BACKWARD, FFTW_ESTIMATE);
-    fft::size_t i;
-    for(i=0; i<size(); ++i){
-      fftw_in[i][0]=in[i].real();
-      fftw_in[i][1]=in[i].imag();
-    }
-    fftw_execute(inverse_plan);
-    for(i=0; i<size(); ++i){
-      out[i].x=fftw_out[i][0]/size();
-      out[i].y=fftw_out[i][1]/size();
-    }
-    fftw_destroy_plan(inverse_plan);
-    return 0;
-  }
 };
 
 
@@ -178,20 +161,6 @@ public:
         in[i]=fftw_in[i]/size();
       }
     }
-    return 0;
-  }
-  int compute_inverse(const ::complex* in, double* out) const {
-    fftw_plan inverse_plan=fftw_plan_dft_c2r(n_dimensions, n, fftw_out, fftw_in, FFTW_ESTIMATE);
-    size_t i;
-    for(i=0; i<size_complex(); ++i){
-      fftw_out[i][0]=in[i].x;
-      fftw_out[i][1]=in[i].y;
-    }
-    fftw_execute(inverse_plan);
-    for(i=0; i<size(); ++i){
-      out[i]=fftw_in[i]/size();
-    }
-    fftw_destroy_plan(inverse_plan);
     return 0;
   }
 };
@@ -246,18 +215,6 @@ public:
         in[i].x=data[2*i]/size();
         in[i].y=data[2*i+1]/size();
       }
-    }
-    return 0;
-  }
-  int compute_inverse(const ::complex* in, ::complex* out) const {
-    for(size_t i=0; i<n[0]; ++i){
-      data[2*i]=in[i].real();
-      data[2*i+1]=in[i].imag();
-    }
-    gsl_fft_complex_backward(data, 1, n[0], wavetable, workspace);
-    for(size_t i=0; i<n[0]; ++i){
-      out[i].x=data[2*i]/size();
-      out[i].y=data[2*i+1]/size();
     }
     return 0;
   }
@@ -325,16 +282,6 @@ public:
     }
       return 0;
   }
-  int compute_inverse(const ::complex* in, double* out) const {
-    
- 
-    
-    
-    
- 
-    
-    return 0;
-  }
 };
 
 
@@ -398,10 +345,6 @@ public:
         in[i].y=data[i].imag/size();
       }
     }
-    return 0;
-  }
-  int compute_inverse(const ::complex* in, ::complex* out) const {
- 
     return 0;
   }
 };
@@ -503,14 +446,6 @@ public:
     }
     return 0;
   }
-  
-  int compute_inverse(const ::complex* in, double* out) const {
-          
- 
-    
-    return 0;
-  }
-
 };
 
 
@@ -552,7 +487,6 @@ public:
       ::complex* buffer;
       buffer=in;
       in=out;
-      out=buffer;
     }
     for(size_t i=0; i<n[0]; ++i){
       data[i]=casa_complex(in[i].real(), in[i].imag());
@@ -563,17 +497,6 @@ public:
       out[i].y=data[i].imag();
     }
     return 0;
-  }
-  int compute_inverse(const ::complex* in, ::complex* out) const {
-    for(size_t i=0; i<n[0]; ++i){
-      data[i]=casa_complex(in[i].real(), in[i].imag());
-    }
-    F->cfftb(size(), data, w);
-    for(size_t i=0; i<n[0]; ++i){
-      out[i].x=data[i].real()/size();
-      out[i].y=data[i].imag()/size();
-    }
-    return 0; 
   }
 };
 
@@ -624,35 +547,7 @@ public:
     }
     return 0;
   }
-  int compute_inverse(const ::complex* in, double* out) const {
- 
-
-    return 0;
-  }
 };
 
-/*
-double error(const fft& f, const ::complex* in, const ::complex* out){
-  ::complex* inverse_transform=new ::complex[f.size()];
-  f.compute_inverse(out, inverse_transform);
-  double e=0;
-  for(fft::size_t i=0; i<f.size(); ++i){
-    e=e+(inverse_transform[i]-in[i]).norm();
-  }
-  delete[] inverse_transform;
-  return e;
-}
-
-double error(const fft& f, const double* in, const ::complex* out){
-  double* inverse_transform=new double[f.size()];
-  f.compute_inverse(out, inverse_transform);
-  double e=0;
-  for(fft::size_t i=0; i<f.size(); ++i){
-    e=e+fabs(inverse_transform[i]-in[i]);
-  }
-  delete[] inverse_transform;
-  return e;
-}
-*/
 
 #endif
