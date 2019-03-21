@@ -451,15 +451,15 @@ public:
 
 class fftpack : public fft {
 protected:
-    typedef casa::DComplex casa_complex;
-    typedef casa::Double casa_double;
+    typedef casacore::DComplex casa_complex;
+    typedef casacore::Double casa_double;
     mutable casa_double* w;
-    mutable casa::FFTPack* F;
+    mutable casacore::FFTPack* F;
      
 public:
   fftpack(const size_t i_n, bool i_inverse) : fft(1, &i_n, i_inverse){
     w=new casa_double[4*size()+15];
-    F=new casa::FFTPack();
+    F=new casacore::FFTPack();
   }
   ~fftpack(){
     delete[] w;
