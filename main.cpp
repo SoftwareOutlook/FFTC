@@ -21,11 +21,13 @@ void display(const string& s){
 
 int main(int argc, char** argv){
 
+  MPI_Init(&argc, &argv);
     
   if(argc<5){
     display( "Please supply 3 dimensions and a number of coils\n");
     return -1;
   }
+
 
 
 #pragma omp parallel
