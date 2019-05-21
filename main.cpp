@@ -23,14 +23,14 @@ int main(int argc, char** argv){
 
     
   if(argc<5){
-    std::cout << "Please supply 3 dimensions and a number of coils\n";
+    display( "Please supply 3 dimensions and a number of coils\n");
     return -1;
   }
 
 
 #pragma omp parallel
 #pragma omp master
-  std::cout << "N threads: " << omp_get_num_threads() << "\n\n";
+  display("N threads: "+std::to_string(omp_get_num_threads())+"\n\n");
 
 
   fftw_init_threads();
@@ -62,15 +62,15 @@ int main(int argc, char** argv){
   {
     // Dimensions
     
-    std::cout << "Dimensions: ";
+    display("Dimensions: ");
     for(i=0; i<n_dimensions; ++i){
-      std::cout << n_x[i] << " ";
+      display(std::to_string(n_x[i])+" ");
     }
-    std::cout << "\n";
-    std::cout << "N coils: " << n_coils << "\n";
-    std::cout << "\n";
-    std::cout << "  R <-> HC\n";
-    std::cout << "\n";
+    display("\n");
+    display("N coils: "+std::to_string(n_coils)+"\n");
+    display("\n");
+    display("  R <-> HC\n");
+    display("\n");
     
     // Signal
     multiarray<double> sig({n_x[0]});
@@ -102,157 +102,157 @@ int main(int argc, char** argv){
     
     
     // FFTW
-    std::cout << "    FFTW\n";
-    std::cout << "      Direct\n";
+    display( "    FFTW\n");
+    display( "      Direct\n");
 
     sw.start();
     fftw_r2c fw(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTWRINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTWRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
     sw.start();
     for(i=0; i<n_coils; ++i){
       fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTWR " << n_x[0] << " " << sw.get() << "\n";
-    
-    std::cout << "      Inverse\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTWR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
+ 
+    display("      Inverse\n");
 
     sw.start();
     fftw_r2c fwi(n_dimensions, n_x, true);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTWRINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTWRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTWRINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTWRINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
     
     
     
-    std::cout << "    GSL\n";
-    std::cout << "      Direct\n";
+    display("    GSL\n");
+    display("      Direct\n");
 
     sw.start();
     gsl_fft_r2c gsl(n_x[0]);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DGSLRINIT " << n_x[0] << " "  << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DGSLRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       gsl.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
  
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DGSLR " << n_x[0] << " "  << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DGSLR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
      
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     gsl_fft_r2c gsli(n_x[0], true);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DGSLRINVINIT " << n_x[0] << " "  << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DGSLRINVINIT "+std::to_string(n_x[0])+" "+ std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DGSLRINV " << n_x[0] << " "  << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DGSLRINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
     
     
     
-    std::cout << "    MKL\n";
-    std::cout << "      Direct\n";
+    display("    MKL\n");
+    display("      Direct\n");
     
     sw.start();
     mkl_fft_r2c mkl(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DMKLRINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DMKLRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       mkl.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DMKLR " << n_x[0] << " " << sw.get() << "\n";
-    std::cout << "      Inverse\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DMKLR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
+    display("      Inverse\n");
     sw.start();
     mkl_fft_r2c mkli(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DMKLRINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DMKLRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       mkli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DMKLRINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DMKLRINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
  
     
-    std::cout << "    FFTPACK\n";
-    std::cout << "      Direct\n";
+    display("    FFTPACK\n");
+    display("      Direct\n");
 
     sw.start();
     fftpack_r2c fftpack(n_x[0]);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTPACKRINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTPACKRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
         fftpack.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTPACKR " << n_x[0] << " " << sw.get() << "\n";
-    std::cout << "      Inverse\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTPACKR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
+    display("      Inverse\n");
 
     sw.start();
     fftpack_r2c fftpacki(n_x[0]);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTPACKRINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTPACKRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
               fftpacki.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTPACKRINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTPACKRINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display( "      Error: "+std::to_string(error)+"\n");
+    display( "\n");
   }
   
   
@@ -260,8 +260,8 @@ int main(int argc, char** argv){
   
   {
     // Dimensions
-    std::cout << "  C <-> C\n";
-    std::cout << "\n";
+    display( "  C <-> C\n");
+    display( "\n");
     
     // Signal
     multiarray<::complex> sig({n_x[0]});
@@ -293,162 +293,162 @@ int main(int argc, char** argv){
     
     
     // FFTW
-    std::cout << "    FFTW\n";
-    std::cout << "      Direct\n";
+    display( "    FFTW\n");
+    display( "      Direct\n");
 
     sw.start();
     fftw_c2c fw(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTWCINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTWCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
     sw.start();
     for(i=0; i<n_coils; ++i){
       fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTWC " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTWC "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     fftw_c2c fwi(n_dimensions, n_x, true);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTWCINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTWCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-     std::cout << "@ 1DFFTWCINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTWCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n"; 
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n"); 
     
     
     // GSL
-    std::cout << "    GSL\n";
-    std::cout << "      Direct\n";
+    display("    GSL\n");
+    display("      Direct\n");
     
     sw.start();
     gsl_fft_c2c gsl(n_x[0]);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DGSLCINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DGSLCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DGSLC " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DGSLC "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     gsl_fft_c2c gsli(n_x[0], true);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DGSLCINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DGSLCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DGSLCINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DGSLCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n"; 
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n"); 
     
     
     // MKL
-    std::cout << "    MKL\n";
-    std::cout << "      Direct\n";
+    display("    MKL\n");
+    display("      Direct\n");
     
     sw.start();
     mkl_fft_c2c mkl(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DMKLCINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DMKLCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DMKLC " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DMKLC "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     mkl_fft_c2c mkli(n_dimensions, n_x, true);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DMKLCINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DMKLCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DMKLCINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DMKLCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";    
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");    
     
     
     // FFTPACK
-    std::cout << "    FFTPACK\n";
-    std::cout << "      Direct\n";
+    display("    FFTPACK\n");
+    display("      Direct\n");
 
     sw.start();
     fftpack_c2c fftpack(n_x[0]);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTPACKCINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTPACKCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
     sw.start();
     for(i=0; i<n_coils; ++i){
            fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTPACKC " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTPACKC "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     fftpack_c2c fftpacki(n_x[0], true);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTPACKCINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTPACKCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
          gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 1DFFTPACKCINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 1DFFTPACKCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";    
-    std::cout << "\n"; 
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");    
+    display("\n"); 
     
   }
   
@@ -465,15 +465,15 @@ int main(int argc, char** argv){
   {
     // Dimensions
     
-    std::cout << "Dimensions: ";
+    display("Dimensions: ");
     for(i=0; i<n_dimensions; ++i){
-      std::cout << n_x[i] << " ";
+      display(std::to_string(n_x[i])+" ");
     }
-    std::cout << "\n";
-    std::cout << "N coils: " << n_coils << "\n";
-    std::cout << "\n";
-    std::cout << "  R <-> HC\n";
-    std::cout << "\n";
+    display("\n");
+    display("N coils: "+std::to_string(n_coils)+"\n");
+    display("\n");
+    display("  R <-> HC\n");
+    display("\n");
     
     // Signal
     multiarray<double> sig({n_x[0], n_x[1]});
@@ -510,83 +510,83 @@ int main(int argc, char** argv){
     
     
     // FFTW
-    std::cout << "    FFTW\n";
-    std::cout << "      Direct\n";
+    display("    FFTW\n");
+    display("      Direct\n");
 
     sw.start();
     fftw_r2c fw(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DFFTWRINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DFFTWRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
     sw.start();
     for(i=0; i<n_coils; ++i){
       fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DFFTWR " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DFFTWR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     fftw_r2c fwi(n_dimensions, n_x, true);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DFFTWRINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DFFTWRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DFFTWRINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DFFTWRINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
     
     
     // MKL
-    std::cout << "    MKL\n";
-    std::cout << "      Direct\n";
+    display("    MKL\n");
+    display("      Direct\n");
 
     sw.start();
     mkl_fft_r2c mkl(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DMKLRINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DMKLRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       mkl.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DMKLR " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DMKLR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
      
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     mkl_fft_r2c mkli(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DMKLRINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DMKLRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       mkli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DMKLR " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DMKLR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
 
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
     
   }  
   
@@ -594,8 +594,8 @@ int main(int argc, char** argv){
   // C <-> C
   
   {
-    std::cout << "  C <-> C\n";
-    std::cout << "\n";
+    display( "  C <-> C\n");
+    display( "\n");
     
     // Signal
     multiarray<::complex> sig({n_x[0], n_x[1]});
@@ -632,80 +632,80 @@ int main(int argc, char** argv){
     
     
     // FFTW
-    std::cout << "    FFTW\n";
-    std::cout << "      Direct\n";
+    display("    FFTW\n");
+    display("      Direct\n");
 
     sw.start();
     fftw_c2c fw(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DFFTWCINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DFFTWCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DFFTWC " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DFFTWC "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     fftw_c2c fwi(n_dimensions, n_x, true);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DFFTWCINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DFFTWCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DFFTWCINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DFFTWCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
     
     
     // MKL
-    std::cout << "    MKL\n";
-    std::cout << "      Direct\n";
+    display("    MKL\n");
+    display("      Direct\n");
 
     sw.start();
     mkl_fft_c2c mkl(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DMKLCINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DMKLCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       mkl.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DMKLC " << n_x[0] << " " << sw.get() << "\n";
-    std::cout << "      Inverse\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DMKLC "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
+    display("      Inverse\n");
 
     sw.start();
     mkl_fft_c2c mkli(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DMKLCINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DMKLCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       mkli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 2DMKLCINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 2DMKLCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
     
   }  
   
@@ -723,15 +723,15 @@ int main(int argc, char** argv){
   {
     // Dimensions
     
-    std::cout << "Dimensions: ";
+    display( "Dimensions: ");
     for(i=0; i<n_dimensions; ++i){
-      std::cout << n_x[i] << " ";
+      display(std::to_string(n_x[i])+" ");
     }
-    std::cout << "\n";
-    std::cout << "N coils: " << n_coils << "\n";
-    std::cout << "\n";
-    std::cout << "  R <-> HC\n";
-    std::cout << "\n";
+    display("\n");
+    display("N coils: "+std::to_string(n_coils)+"\n");
+    display("\n");
+    display("  R <-> HC\n");
+    display("\n");
     
     // Signal
     multiarray<double> sig({n_x[0], n_x[1], n_x[2]});
@@ -773,80 +773,80 @@ int main(int argc, char** argv){
     
     
     // FFTW
-    std::cout << "    FFTW\n";
-    std::cout << "      Direct\n";
+    display("    FFTW\n");
+    display("      Direct\n");
 
     sw.start();
     fftw_r2c fw(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DFFTWRINIT " << n_x[0] << " " << sw.get() << "\n"; 
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DFFTWRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n"); 
     sw.start();
     for(i=0; i<n_coils; ++i){
       fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DFFTWR " << n_x[0] << " " << sw.get() << "\n"; 
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DFFTWR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n"); 
     
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     fftw_r2c fwi(n_dimensions, n_x, true);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DFFTWRINVINIT " << n_x[0] << " " << sw.get() << "\n"; 
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DFFTWRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n"); 
     sw.start();
     for(i=0; i<n_coils; ++i){
       fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DFFTWRINV " << n_x[0] << " " << sw.get() << "\n"; 
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DFFTWRINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n"); 
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
     
     
     // MKL
-    std::cout << "    MKL\n";
-    std::cout << "      Direct\n";
-    std::cout << "@ 3DMKLRINIT " << n_x[0] << " " << sw.get() << "\n";  
+    display("    MKL\n");
+    display("      Direct\n");
+    display("@ 3DMKLRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");  
     mkl_fft_r2c mkl(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     
     sw.start();
     for(i=0; i<n_coils; ++i){
       mkl.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DMKLR " << n_x[0] << " " << sw.get() << "\n";  
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DMKLR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");  
 
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     mkl_fft_r2c mkli(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DMKLRINVINIT " << n_x[0] << " " << sw.get() << "\n"; 
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DMKLRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n"); 
     sw.start();
     for(i=0; i<n_coils; ++i){
       mkli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DMKLRINV " << n_x[0] << " " << sw.get() << "\n"; 
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DMKLRINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n"); 
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
     
   }  
   
@@ -854,8 +854,8 @@ int main(int argc, char** argv){
   // C <-> C
   
   {
-    std::cout << "  C <-> C\n";
-    std::cout << "\n";
+    display("  C <-> C\n");
+    display("\n");
     
     // Signal
     multiarray<::complex> sig({n_x[0], n_x[1], n_x[2]});
@@ -897,85 +897,87 @@ int main(int argc, char** argv){
     
    
     // FFTW
-    std::cout << "    FFTW\n";
-    std::cout << "      Direct\n";
+    display("    FFTW\n");
+    display("      Direct\n");
 
     sw.start();
     fftw_c2c fw(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DFFTWCINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DFFTWCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DFFTWC " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DFFTWC "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
-    std::cout << "      Inverse\n";
+    display("      Inverse\n");
 
     sw.start();
     fftw_c2c fwi(n_dimensions, n_x, true);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DFFTWCINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DFFTWCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DFFTWCINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DFFTWCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
     
     
     // MKL
-    std::cout << "    MKL\n";
-    std::cout << "      Direct\n";
+    display("    MKL\n");
+    display("      Direct\n");
 
     sw.start();
     mkl_fft_c2c mkl(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DMKLCINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DMKLCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       mkl.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DMKLC " << n_x[0] << " " << sw.get() << "\n";
-    std::cout << "      Inverse\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DMKLC "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
+    display("      Inverse\n");
 
     sw.start();
     mkl_fft_c2c mkli(n_dimensions, n_x);
     sw.stop();
-    std::cout << "        Init. time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DMKLCINVINIT " << n_x[0] << " " << sw.get() << "\n";
+    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DMKLCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
       mkli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
-    std::cout << "        Time:  " << sw.get() << " s\n";
-    std::cout << "@ 3DMKLCINV " << n_x[0] << " " << sw.get() << "\n";
+    display("        Time:  "+std::to_string(sw.get())+" s\n");
+    display("@ 3DMKLCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     error=0;
     for(i=0; i<n_coils; ++i){
       error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
     }
-    std::cout << "      Error: " << error << "\n";
-    std::cout << "\n";
+    display("      Error: "+std::to_string(error)+"\n");
+    display("\n");
     
   }  
    
    
   fftw_cleanup_threads();
+
+  MPI_Finalize();
 
   return 0;
 
