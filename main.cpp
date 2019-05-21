@@ -6,8 +6,18 @@
 #include <omp.h>
 #include "multiarray.hpp"
 #include <vector>
+#include <mpi.h>
 using namespace std;
 
+void display(const string& s){
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if(rank==0){
+#pragma omp parallel
+#pragma omp master
+    std::cout << s;
+  }
+}
 
 int main(int argc, char** argv){
 
