@@ -3,6 +3,7 @@
 
 #include "complex.hpp"
 #include <fftw3.h>
+#include <fftw3-mpi.h>
 #include <math.h>
 #include <gsl/gsl_fft_complex.h>
 #include <gsl/gsl_fft_real.h>

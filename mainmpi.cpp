@@ -1,11 +1,13 @@
 #include "complex.hpp"
 #include "signal.hpp"
 #include "fft.hpp"
+#include "fftmpi.hpp"
 #include <iostream>
 #include "stopwatch.hpp"
 #include <omp.h>
 #include "multiarray.hpp"
 #include <vector>
+#include <mpi.h>
 using namespace std;
 
 void display(const string& s){
@@ -20,6 +22,7 @@ void display(const string& s){
 
 int main(int argc, char** argv){
 
+  MPI_Init(&argc, &argv);
     
   if(argc<5){
     display( "Please supply 3 dimensions and a number of coils\n");
@@ -32,14 +35,14 @@ int main(int argc, char** argv){
 #pragma omp master
   display("N threads: "+std::to_string(omp_get_num_threads())+"\n\n");
 
- 
+  fftw_mpi_init();
   fftw_init_threads();
   fftw_plan_with_nthreads(omp_get_max_threads());
   
   mkl_set_num_threads_local(omp_get_max_threads());
   
   
-  int i, j, k[3], n_x[3], dim[3], n_dimensions, n_coils;
+  fft_mpi::size_t i, j, k[3], n_x[3], dim[3], n_dimensions, n_coils;
   double a=0.25;
   double b=a/2;
   double s, x[3], l_x[3]={1, 1, 1}, error;
@@ -106,7 +109,7 @@ int main(int argc, char** argv){
     display( "      Direct\n");
 
     sw.start();
-    fftw_r2c fw(n_dimensions, n_x);
+    fftw_mpi_r2c fw(n_dimensions, n_x);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 1DFFTWRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
@@ -122,7 +125,7 @@ int main(int argc, char** argv){
     display("      Inverse\n");
 
     sw.start();
-    fftw_r2c fwi(n_dimensions, n_x, true);
+    fftw_mpi_r2c fwi(n_dimensions, n_x, true);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 1DFFTWRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
@@ -142,46 +145,7 @@ int main(int argc, char** argv){
     
     
     
-    display("    GSL\n");
-    display("      Direct\n");
-
-    sw.start();
-    gsl_fft_r2c gsl(n_x[0]);
-    sw.stop();
-    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DGSLRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    sw.start();
-    for(i=0; i<n_coils; ++i){
-      gsl.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
-    }
-    sw.stop();
- 
-    display("        Time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DGSLR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-     
-    display("      Inverse\n");
-
-    sw.start();
-    gsl_fft_r2c gsli(n_x[0], true);
-    sw.stop();
-    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DGSLRINVINIT "+std::to_string(n_x[0])+" "+ std::to_string(sw.get())+"\n");
-    sw.start();
-    for(i=0; i<n_coils; ++i){
-      gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
-    }
-    sw.stop();
-    display("        Time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DGSLRINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    error=0;
-    for(i=0; i<n_coils; ++i){
-      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
-    }
-    display("      Error: "+std::to_string(error)+"\n");
-    display("\n");
-    
-    
-    
+    /*    
     display("    MKL\n");
     display("      Direct\n");
     
@@ -216,43 +180,8 @@ int main(int argc, char** argv){
     }
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
- 
+    */
     
-    display("    FFTPACK\n");
-    display("      Direct\n");
-
-    sw.start();
-    fftpack_r2c fftpack(n_x[0]);
-    sw.stop();
-    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DFFTPACKRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    sw.start();
-    for(i=0; i<n_coils; ++i){
-        fftpack.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
-    }
-    sw.stop();
-    display("        Time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DFFTPACKR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    display("      Inverse\n");
-
-    sw.start();
-    fftpack_r2c fftpacki(n_x[0]);
-    sw.stop();
-    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DFFTPACKRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    sw.start();
-    for(i=0; i<n_coils; ++i){
-              fftpacki.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
-    }
-    sw.stop();
-    display("        Time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DFFTPACKRINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    error=0;
-    for(i=0; i<n_coils; ++i){
-      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
-    }
-    display( "      Error: "+std::to_string(error)+"\n");
-    display( "\n");
   }
   
   
@@ -297,7 +226,7 @@ int main(int argc, char** argv){
     display( "      Direct\n");
 
     sw.start();
-    fftw_c2c fw(n_dimensions, n_x);
+    fftw_mpi_c2c fw(n_dimensions, n_x);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 1DFFTWCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
@@ -313,7 +242,7 @@ int main(int argc, char** argv){
     display("      Inverse\n");
 
     sw.start();
-    fftw_c2c fwi(n_dimensions, n_x, true);
+    fftw_mpi_c2c fwi(n_dimensions, n_x, true);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 1DFFTWCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
@@ -332,45 +261,7 @@ int main(int argc, char** argv){
     display("\n"); 
     
     
-    // GSL
-    display("    GSL\n");
-    display("      Direct\n");
-    
-    sw.start();
-    gsl_fft_c2c gsl(n_x[0]);
-    sw.stop();
-    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DGSLCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    sw.start();
-    for(i=0; i<n_coils; ++i){
-      fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
-    }
-    sw.stop();
-    display("        Time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DGSLC "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    
-    display("      Inverse\n");
-
-    sw.start();
-    gsl_fft_c2c gsli(n_x[0], true);
-    sw.stop();
-    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DGSLCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    sw.start();
-    for(i=0; i<n_coils; ++i){
-      gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
-    }
-    sw.stop();
-    display("        Time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DGSLCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    error=0;
-    for(i=0; i<n_coils; ++i){
-      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
-    }
-    display("      Error: "+std::to_string(error)+"\n");
-    display("\n"); 
-    
-    
+    /*
     // MKL
     display("    MKL\n");
     display("      Direct\n");
@@ -408,51 +299,11 @@ int main(int argc, char** argv){
     }
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");    
-    
-    
-    // FFTPACK
-    display("    FFTPACK\n");
-    display("      Direct\n");
-
-    sw.start();
-    fftpack_c2c fftpack(n_x[0]);
-    sw.stop();
-    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DFFTPACKCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    
-    sw.start();
-    for(i=0; i<n_coils; ++i){
-           fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
-    }
-    sw.stop();
-    display("        Time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DFFTPACKC "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    
-    display("      Inverse\n");
-
-    sw.start();
-    fftpack_c2c fftpacki(n_x[0], true);
-    sw.stop();
-    display("        Init. time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DFFTPACKCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    sw.start();
-    for(i=0; i<n_coils; ++i){
-         gsli.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
-    }
-    sw.stop();
-    display("        Time:  "+std::to_string(sw.get())+" s\n");
-    display("@ 1DFFTPACKCINV "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
-    error=0;
-    for(i=0; i<n_coils; ++i){
-      error=error+(multiplied_signals[i]-inverse_transforms[i]).norm();
-    }
-    display("      Error: "+std::to_string(error)+"\n");
-    display("\n");    
-    display("\n"); 
+    */     
     
   }
   
-  
+   
   
   // 2D
   n_dimensions=2;
@@ -514,7 +365,7 @@ int main(int argc, char** argv){
     display("      Direct\n");
 
     sw.start();
-    fftw_r2c fw(n_dimensions, n_x);
+    fftw_mpi_r2c fw(n_dimensions, n_x);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 2DFFTWRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
@@ -530,7 +381,7 @@ int main(int argc, char** argv){
     display("      Inverse\n");
 
     sw.start();
-    fftw_r2c fwi(n_dimensions, n_x, true);
+    fftw_mpi_r2c fwi(n_dimensions, n_x, true);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 2DFFTWRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
@@ -548,7 +399,7 @@ int main(int argc, char** argv){
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
     
-    
+    /*  
     // MKL
     display("    MKL\n");
     display("      Direct\n");
@@ -587,7 +438,7 @@ int main(int argc, char** argv){
     }
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
-    
+    */
   }  
   
   
@@ -636,7 +487,7 @@ int main(int argc, char** argv){
     display("      Direct\n");
 
     sw.start();
-    fftw_c2c fw(n_dimensions, n_x);
+    fftw_mpi_c2c fw(n_dimensions, n_x);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 2DFFTWCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
@@ -651,7 +502,7 @@ int main(int argc, char** argv){
     display("      Inverse\n");
 
     sw.start();
-    fftw_c2c fwi(n_dimensions, n_x, true);
+    fftw_mpi_c2c fwi(n_dimensions, n_x, true);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 2DFFTWCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
@@ -669,7 +520,7 @@ int main(int argc, char** argv){
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
     
-    
+    /*
     // MKL
     display("    MKL\n");
     display("      Direct\n");
@@ -706,11 +557,11 @@ int main(int argc, char** argv){
     }
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
-    
+    */
   }  
   
   
-
+  
   // 3D
   n_dimensions=3;
   n_x[0]=dim[0];
@@ -777,7 +628,7 @@ int main(int argc, char** argv){
     display("      Direct\n");
 
     sw.start();
-    fftw_r2c fw(n_dimensions, n_x);
+    fftw_mpi_r2c fw(n_dimensions, n_x);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 3DFFTWRINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n"); 
@@ -792,7 +643,7 @@ int main(int argc, char** argv){
     display("      Inverse\n");
 
     sw.start();
-    fftw_r2c fwi(n_dimensions, n_x, true);
+    fftw_mpi_r2c fwi(n_dimensions, n_x, true);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 3DFFTWRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n"); 
@@ -810,7 +661,7 @@ int main(int argc, char** argv){
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
     
-    
+    /*
     // MKL
     display("    MKL\n");
     display("      Direct\n");
@@ -847,7 +698,7 @@ int main(int argc, char** argv){
     }
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
-    
+    */
   }  
   
   
@@ -901,7 +752,7 @@ int main(int argc, char** argv){
     display("      Direct\n");
 
     sw.start();
-    fftw_c2c fw(n_dimensions, n_x);
+    fftw_mpi_c2c fw(n_dimensions, n_x);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 3DFFTWCINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
@@ -916,7 +767,7 @@ int main(int argc, char** argv){
     display("      Inverse\n");
 
     sw.start();
-    fftw_c2c fwi(n_dimensions, n_x, true);
+    fftw_mpi_c2c fwi(n_dimensions, n_x, true);
     sw.stop();
     display("        Init. time:  "+std::to_string(sw.get())+" s\n");
     display("@ 3DFFTWCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
@@ -934,7 +785,7 @@ int main(int argc, char** argv){
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
     
-    
+    /*
     // MKL
     display("    MKL\n");
     display("      Direct\n");
@@ -971,13 +822,14 @@ int main(int argc, char** argv){
     }
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
-    
+    */
   }  
    
    
   fftw_cleanup_threads();
 
+  MPI_Finalize();
 
   return 0;
-
+  
 }
