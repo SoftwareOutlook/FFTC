@@ -18,7 +18,8 @@ protected:
   size_t n_dimensions;
   size_t* n;
   bool inverse;
-  size_t n_x_local, offset;
+  size_t n_x_local, offset, n_x_local_output, offset_output;
+  int i_process, n_processes;
 
 public:
   fft_mpi(const size_t i_n_dimensions, const size_t* i_n, bool i_inverse){
@@ -28,6 +29,8 @@ public:
       n[i]=i_n[i];
     }
     inverse=i_inverse;
+    MPI_Comm_rank(MPI_COMM_WORLD, &i_process);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
   }
   ~fft_mpi(){
     delete[] n;
@@ -47,6 +50,13 @@ public:
   }
   size_t size_local() const {
     size_t s=n_x_local;
+    for(size_t i=1; i<n_dimensions; ++i){
+      s=s*n[i];
+    }
+    return s;
+  }
+  size_t size_local_output() const {
+    size_t s=n_x_local_output;
     for(size_t i=1; i<n_dimensions; ++i){
       s=s*n[i];
     }
@@ -79,7 +89,17 @@ private:
 public:
   fftw_mpi_c2c(const size_t i_n_dimensions, const size_t* i_n_x, bool i_inverse=false) : fftw_mpi(i_n_dimensions, i_n_x, i_inverse){
     size_t allocated_size;
-    allocated_size=fftw_mpi_local_size(n_dimensions, n, MPI_COMM_WORLD, &n_x_local, &offset);
+    if(i_n_dimensions>1){
+      allocated_size=2*fftw_mpi_local_size(n_dimensions, n, MPI_COMM_WORLD, &n_x_local, &offset);
+      n_x_local_output=n_x_local;
+      offset_output=offset;
+    }else{
+       if(!is_inverse()){
+         allocated_size=2*fftw_mpi_local_size_1d(n[0], MPI_COMM_WORLD, FFTW_FORWARD, FFTW_ESTIMATE, &n_x_local, &offset, &n_x_local_output, &offset_output);
+       }else{
+         allocated_size=2*fftw_mpi_local_size_1d(n[0], MPI_COMM_WORLD, FFTW_BACKWARD, FFTW_ESTIMATE, &n_x_local, &offset, &n_x_local_output, &offset_output);  
+       }
+    }
     fftw_in=fftw_alloc_complex(allocated_size);
     fftw_out=fftw_alloc_complex(allocated_size);
     if(!is_inverse()){
@@ -90,14 +110,25 @@ public:
   }
   ~fftw_mpi_c2c(){
     fftw_destroy_plan(plan);
-    fftw_free(fftw_in);
-    fftw_free(fftw_out);
+    // fftw_free(fftw_in);
+    // fftw_free(fftw_out);
   }
   size_t size_complex() const {
     return size();
   }
   size_t size_complex_local() const {
     return size_local();
+  }
+  size_t size_output_local() const {
+    if(get_n_dimensions()==1){
+      return size_local_output();
+    }else{
+      if(is_inverse()){
+        return size_local();   
+      }else{
+        return size_complex_local();   
+      }
+    }
   }
   int compute(::complex* in, ::complex* out){
     size_t i;
@@ -106,8 +137,8 @@ public:
         fftw_in[i][0]=in[i].real();
         fftw_in[i][1]=in[i].imag();
       }
-      fftw_execute(plan);
-      for(i=offset; i<offset+size_local(); ++i){
+      //   fftw_execute(plan);
+      for(i=offset_output; i<offset_output+size_local(); ++i){
         out[i].x=fftw_out[i][0];
         out[i].y=fftw_out[i][1];
       }
@@ -116,8 +147,8 @@ public:
         fftw_in[i][0]=out[i].real();
         fftw_in[i][1]=out[i].imag();
       }
-      fftw_execute(plan);
-      for(i=offset; i<offset+size_local(); ++i){
+      //   fftw_execute(plan);
+      for(i=offset_output; i<offset_output+size_local(); ++i){
         in[i].x=fftw_out[i][0]/size();
         in[i].y=fftw_out[i][1]/size();
       }       
@@ -136,7 +167,7 @@ private:
 public:
   fftw_mpi_r2c(const size_t i_n_dimensions, const size_t* i_n_x, bool i_inverse=false) : fftw_mpi(i_n_dimensions, i_n_x, i_inverse){
     size_t allocated_size;
-    allocated_size=fftw_mpi_local_size(n_dimensions, n, MPI_COMM_WORLD, &n_x_local, &offset);
+    allocated_size=2*fftw_mpi_local_size(n_dimensions, n, MPI_COMM_WORLD, &n_x_local, &offset);
     fftw_in=(double*)fftw_malloc(sizeof(double)*allocated_size);
     fftw_out=fftw_alloc_complex(allocated_size);
     if(!is_inverse()){
@@ -146,9 +177,9 @@ public:
     }
   }
   ~fftw_mpi_r2c(){
-    fftw_destroy_plan(plan);
-    fftw_free(fftw_in);
-    fftw_free(fftw_out);
+    //    fftw_destroy_plan(plan);
+    // fftw_free(fftw_in);
+    // fftw_free(fftw_out);
   }
   size_t size_complex() const {
     size_t s=1;
@@ -159,6 +190,9 @@ public:
     return s;
   }
   size_t size_complex_local() const {
+    if(n_dimensions==1){
+      return n_x_local/2+1;    
+    }
     size_t s=n_x_local;
     for(size_t i=1; i<n_dimensions-1; ++i){
       s=s*n[i];
@@ -172,7 +206,9 @@ public:
       for(i=offset; i<offset+size_local(); ++i){
         fftw_in[i]=in[i];
       }
-      fftw_execute(plan);
+      std::cout << "before\n";
+      //   fftw_execute(plan);
+      std::cout << "after\n";
       for(i=offset; i<offset+size_complex_local(); ++i){
         out[i].x=fftw_out[i][0];
         out[i].y=fftw_out[i][1];
@@ -182,10 +218,10 @@ public:
         fftw_out[i][0]=out[i].x;
         fftw_out[i][1]=out[i].y;
       }
-      fftw_execute(plan);
-      for(i=offset; i<offset+size_local(); ++i){
-        in[i]=fftw_in[i]/size();
-      }
+      //  fftw_execute(plan);
+     for(i=offset; i<offset+size_local(); ++i){
+       in[i]=fftw_in[i]/size();
+     }
     }
     return 0;
   }

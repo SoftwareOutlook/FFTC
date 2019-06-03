@@ -13,7 +13,7 @@ using namespace std;
 void display(const string& s){
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  if(rank==0){
+  if(rank>=0){
 #pragma omp parallel
 #pragma omp master
     std::cout << s;
@@ -64,7 +64,7 @@ int main(int argc, char** argv){
   
   {
     // Dimensions
-    
+ /*   
     display("Dimensions: ");
     for(i=0; i<n_dimensions; ++i){
       display(std::to_string(n_x[i])+" ");
@@ -116,7 +116,7 @@ int main(int argc, char** argv){
     
     sw.start();
     for(i=0; i<n_coils; ++i){
-      fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
+     // fw.compute(multiplied_signals[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
     display("        Time:  "+std::to_string(sw.get())+" s\n");
@@ -131,7 +131,7 @@ int main(int argc, char** argv){
     display("@ 1DFFTWRINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
-      fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
+     // fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
     display("        Time:  "+std::to_string(sw.get())+" s\n");
@@ -143,7 +143,7 @@ int main(int argc, char** argv){
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
     
-    
+   */ 
     
     /*    
     display("    MKL\n");
@@ -188,6 +188,7 @@ int main(int argc, char** argv){
     // C <-> C
   
   {
+      
     // Dimensions
     display( "  C <-> C\n");
     display( "\n");
@@ -248,7 +249,7 @@ int main(int argc, char** argv){
     display("@ 1DFFTWCINVINIT "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     sw.start();
     for(i=0; i<n_coils; ++i){
-      fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
+       fwi.compute(inverse_transforms[i].pointer(), transforms[i].pointer());
     }
     sw.stop();
     display("        Time:  "+std::to_string(sw.get())+" s\n");
@@ -259,8 +260,11 @@ int main(int argc, char** argv){
     }
     display("      Error: "+std::to_string(error)+"\n");
     display("\n"); 
-    
-    
+    std::cout << "==============================\n";
+        fftw_cleanup_threads();
+	MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Finalize();
+  return 0;
     /*
     // MKL
     display("    MKL\n");
@@ -299,8 +303,8 @@ int main(int argc, char** argv){
     }
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");    
-    */     
-    
+         
+    */
   }
   
    
@@ -378,6 +382,7 @@ int main(int argc, char** argv){
     display("        Time:  "+std::to_string(sw.get())+" s\n");
     display("@ 2DFFTWR "+std::to_string(n_x[0])+" "+std::to_string(sw.get())+"\n");
     
+    
     display("      Inverse\n");
 
     sw.start();
@@ -439,6 +444,8 @@ int main(int argc, char** argv){
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
     */
+    
+    
   }  
   
   
@@ -558,9 +565,8 @@ int main(int argc, char** argv){
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
     */
+    
   }  
-  
-  
   
   // 3D
   n_dimensions=3;
@@ -699,6 +705,7 @@ int main(int argc, char** argv){
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
     */
+    
   }  
   
   
@@ -823,11 +830,12 @@ int main(int argc, char** argv){
     display("      Error: "+std::to_string(error)+"\n");
     display("\n");
     */
+    
   }  
    
    
   fftw_cleanup_threads();
-
+  
   MPI_Finalize();
 
   return 0;
