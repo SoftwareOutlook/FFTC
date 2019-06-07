@@ -1,8 +1,6 @@
 CXX=CC
-FLAGS= -O3  -lm -I/opt/intel/parallel_studio_xe_2017_ce/compilers_and_libraries_2017.3.191/linux/mkl/include/ -I${DATA}/opt/include -lfftw3 -lfftw3_threads -lfftw3_mpi -lboost_system -lboost_chrono -lmkl_core -lmkl_intel_thread -lmkl_intel_lp64 -liomp5 -I${MKLROOT}/include -L${MKLROOT}/lib/intel64
 
-
-
+FLAGS=-DMKL_ILP64 -openmp -I${MKLROOT}/include -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_ilp64.a ${MKLROOT}/lib/intel64/libmkl_cdft_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl              -L/opt/intel/composer_xe_2015.2.164/compiler/lib/intel64 -lboost_system
 all: testfftw testmkl
 
 testmkl: mainmkl.o 
