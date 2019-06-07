@@ -2,7 +2,7 @@
 #define FFTMPI_HPP
 
 #include "complex.hpp"
-#include <fftw3.h>
+//#include <fftw3.h>
 #include <fftw3-mpi.h>
 #include <math.h>
 #include <mkl_service.h>
@@ -170,8 +170,16 @@ public:
     allocated_size=2*fftw_mpi_local_size(n_dimensions, n, MPI_COMM_WORLD, &n_x_local, &offset);
     fftw_in=(double*)fftw_malloc(sizeof(double)*allocated_size);
     fftw_out=fftw_alloc_complex(allocated_size);
+ 
     if(!is_inverse()){
+int rank;
+MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+std::cout << "duck1 " << rank << "\n";
+std::cout << n_dimensions << "\n";
+ std::cout << n[0] << " " << n[1] << "\n"; 
       plan=fftw_mpi_plan_dft_r2c(n_dimensions, n, fftw_in, fftw_out, MPI_COMM_WORLD, FFTW_ESTIMATE);
+MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+std::cout << "duck2 " << rank << "\n";
     }else{
       plan=fftw_mpi_plan_dft_c2r(n_dimensions, n, fftw_out, fftw_in, MPI_COMM_WORLD, FFTW_ESTIMATE);  
     }
