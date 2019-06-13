@@ -4,4 +4,4 @@ export OPT=${DATA}/opt
 export C_INCLUDE_PATH=${OPT}/include:${C_INCLUDE_PATH}
 export CPLUS_INCLUDE_PATH=${OPT}/include:${CPLUS_INCLUDE_PATH}
 export LD_LIBRARY_PATH=${OPT}/lib:${LD_LIBRARY_PATH}
-export PATH=${OPT}/lib:${PATH}
+export PATH=${OPT}/bin:${PATH}
